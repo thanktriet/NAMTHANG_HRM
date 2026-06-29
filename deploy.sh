@@ -14,9 +14,9 @@ echo "🚀 Bắt đầu deploy Nam Thắng HRM..."
 
 # ===== CONFIG =====
 APP_DIR="/var/www/namthang-hrm"
-WEB_PORT=3050
-LANDING_PORT=3052
-API_PORT=4050
+WEB_PORT=6050
+LANDING_PORT=6052
+API_PORT=6060
 DB_NAME="namthang_hrm"
 DB_USER="namthang"
 DB_PASS="NamThang@HRM2026!"
