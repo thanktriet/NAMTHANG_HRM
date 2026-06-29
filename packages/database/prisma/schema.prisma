@@ -1,0 +1,226 @@
+// Schema Prisma cho hệ thống quản lý nhân sự Nam Thắng HRM
+// Bao gồm các model cơ bản: Tổ chức, Phòng ban, Chức vụ, Người dùng, Nhân viên
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+/// Giới tính
+enum Gender {
+  MALE   // Nam
+  FEMALE // Nữ
+  OTHER  // Khác
+}
+
+/// Trạng thái nhân viên
+enum EmployeeStatus {
+  ACTIVE     // Đang làm việc
+  INACTIVE   // Không hoạt động
+  ON_LEAVE   // Đang nghỉ phép
+  TERMINATED // Đã nghỉ việc
+}
+
+/// Vai trò người dùng trong hệ thống
+enum UserRole {
+  SUPER_ADMIN        // Quản trị viên cấp cao
+  ADMIN              // Quản trị viên
+  HR_MANAGER         // Trưởng phòng nhân sự
+  HR_STAFF           // Nhân viên nhân sự
+  DEPARTMENT_MANAGER // Trưởng phòng ban
+  EMPLOYEE           // Nhân viên
+}
+
+// ==================== MODELS ====================
+
+/// Tổ chức / Công ty
+model Organization {
+  id          String   @id @default(cuid())
+  name        String   // Tên tổ chức
+  code        String   @unique // Mã tổ chức
+  description String?  // Mô tả
+  address     String?  // Địa chỉ
+  phone       String?  // Số điện thoại
+  email       String?  // Email
+  website     String?  // Website
+  logo        String?  // Logo URL
+  taxCode     String?  @map("tax_code") // Mã số thuế
+  isActive    Boolean  @default(true) @map("is_active") // Trạng thái hoạt động
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Quan hệ
+  departments Department[] // Danh sách phòng ban
+  employees   Employee[]   // Danh sách nhân viên
+  users       User[]       // Danh sách người dùng
+
+  @@map("organizations")
+}
+
+/// Phòng ban
+model Department {
+  id          String  @id @default(cuid())
+  name        String  // Tên phòng ban
+  code        String  @unique // Mã phòng ban
+  description String? // Mô tả
+
+  // Phòng ban cha (hỗ trợ cấu trúc cây)
+  parentId String?     @map("parent_id")
+  parent   Department? @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children Department[] @relation("DepartmentHierarchy")
+
+  // Trưởng phòng ban
+  managerId String?   @map("manager_id")
+  manager   Employee? @relation("DepartmentManager", fields: [managerId], references: [id])
+
+  // Thuộc tổ chức
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  isActive  Boolean  @default(true) @map("is_active") // Trạng thái hoạt động
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Quan hệ
+  positions Position[] // Danh sách chức vụ
+  employees Employee[] // Danh sách nhân viên
+
+  @@map("departments")
+}
+
+/// Chức vụ / Vị trí công việc
+model Position {
+  id          String  @id @default(cuid())
+  name        String  // Tên chức vụ
+  code        String  @unique // Mã chức vụ
+  description String? // Mô tả
+  level       Int     @default(0) // Cấp bậc (dùng để phân quyền)
+
+  // Thuộc phòng ban
+  departmentId String     @map("department_id")
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  isActive  Boolean  @default(true) @map("is_active") // Trạng thái hoạt động
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Quan hệ
+  employees Employee[] // Danh sách nhân viên giữ chức vụ này
+
+  @@map("positions")
+}
+
+/// Người dùng hệ thống (tài khoản đăng nhập)
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique // Email đăng nhập
+  passwordHash  String   @map("password_hash") // Mật khẩu đã mã hóa
+  isActive      Boolean  @default(true) @map("is_active") // Trạng thái tài khoản
+  emailVerified Boolean  @default(false) @map("email_verified") // Đã xác thực email
+  lastLoginAt   DateTime? @map("last_login_at") // Lần đăng nhập cuối
+
+  // Thuộc tổ chức
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Quan hệ
+  employee Employee? // Liên kết với nhân viên (1-1)
+  roles    Role[]    // Danh sách vai trò
+
+  @@map("users")
+}
+
+/// Vai trò (phân quyền)
+model Role {
+  id          String   @id @default(cuid())
+  name        String   // Tên vai trò
+  code        UserRole @unique // Mã vai trò (enum)
+  description String?  // Mô tả
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Quan hệ
+  users       User[]       // Người dùng có vai trò này
+  permissions Permission[] // Quyền hạn của vai trò
+
+  @@map("roles")
+}
+
+/// Quyền hạn
+model Permission {
+  id          String  @id @default(cuid())
+  name        String  // Tên quyền
+  code        String  @unique // Mã quyền (ví dụ: employee.read, employee.write)
+  description String? // Mô tả
+  module      String  // Module (ví dụ: employee, department, attendance)
+  action      String  // Hành động (ví dụ: read, write, delete)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Quan hệ
+  roles Role[] // Vai trò có quyền này
+
+  @@map("permissions")
+}
+
+/// Nhân viên
+model Employee {
+  id             String         @id @default(cuid())
+  employeeCode   String         @unique @map("employee_code") // Mã nhân viên
+  firstName      String         @map("first_name") // Họ
+  lastName       String         @map("last_name") // Tên
+  fullName       String         @map("full_name") // Họ và tên đầy đủ
+  gender         Gender         // Giới tính
+  dateOfBirth    DateTime?      @map("date_of_birth") // Ngày sinh
+  phone          String?        // Số điện thoại
+  personalEmail  String?        @map("personal_email") // Email cá nhân
+  address        String?        // Địa chỉ
+  idNumber       String?        @map("id_number") // Số CMND/CCCD
+  idIssuedDate   DateTime?      @map("id_issued_date") // Ngày cấp
+  idIssuedPlace  String?        @map("id_issued_place") // Nơi cấp
+  taxCode        String?        @map("tax_code") // Mã số thuế cá nhân
+  bankAccount    String?        @map("bank_account") // Số tài khoản ngân hàng
+  bankName       String?        @map("bank_name") // Tên ngân hàng
+  avatar         String?        // Ảnh đại diện URL
+
+  // Thông tin công việc
+  joinDate       DateTime?      @map("join_date") // Ngày vào làm
+  leaveDate      DateTime?      @map("leave_date") // Ngày nghỉ việc
+  status         EmployeeStatus @default(ACTIVE) // Trạng thái
+
+  // Thuộc tổ chức
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  // Thuộc phòng ban
+  departmentId String     @map("department_id")
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  // Chức vụ
+  positionId String   @map("position_id")
+  position   Position @relation(fields: [positionId], references: [id])
+
+  // Liên kết tài khoản người dùng (1-1)
+  userId String? @unique @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Quan hệ ngược
+  managedDepartments Department[] @relation("DepartmentManager") // Phòng ban quản lý
+
+  @@map("employees")
+}

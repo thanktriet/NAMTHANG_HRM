@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: namthang-postgres
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_DB: namthang_hrm
+      POSTGRES_USER: namthang
+      POSTGRES_PASSWORD: namthang_secret_2026
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - namthang-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U namthang -d namthang_hrm']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: namthang-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - namthang-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio
+    container_name: namthang-minio
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: namthang_minio
+      MINIO_ROOT_PASSWORD: namthang_minio_secret
+    volumes:
+      - minio_data:/data
+    networks:
+      - namthang-network
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: namthang-nats
+    ports:
+      - '4222:4222'
+    networks:
+      - namthang-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: namthang-pgadmin
+    ports:
+      - '5050:80'
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@namthang.vn
+      PGADMIN_DEFAULT_PASSWORD: admin
+    networks:
+      - namthang-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: namthang-mailhog
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+    networks:
+      - namthang-network
+
+networks:
+  namthang-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  minio_data:
+  redis_data:
