@@ -58,7 +58,7 @@ export default function CaiDatPage() {
             </div>
             <div>
               <label style={{ fontSize: 13, fontWeight: 500, color: "#374151", display: "block", marginBottom: 6 }}>Hotline</label>
-              <input defaultValue="1900 xxxx" style={{ width: "100%", padding: "10px 14px", border: "1.5px solid #e5e7eb", borderRadius: 8, fontSize: 14 }} />
+              <input defaultValue="0938 267 888" style={{ width: "100%", padding: "10px 14px", border: "1.5px solid #e5e7eb", borderRadius: 8, fontSize: 14 }} />
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={{ fontSize: 13, fontWeight: 500, color: "#374151", display: "block", marginBottom: 6 }}>Địa chỉ</label>

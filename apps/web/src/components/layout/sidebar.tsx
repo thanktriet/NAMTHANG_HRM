@@ -18,6 +18,7 @@ import {
   FileStack,
   BarChart3,
   Settings,
+  ShieldCheck,
   ChevronDown,
   LogOut,
 } from "lucide-react";
@@ -68,6 +69,7 @@ const navItems: NavItem[] = [
   { title: "KPI", href: "/kpi", icon: Target },
   { title: "Biểu mẫu", href: "/bieu-mau", icon: FileStack },
   { title: "Báo cáo", href: "/bao-cao", icon: BarChart3 },
+  { title: "Tài khoản & Phân quyền", href: "/phan-quyen-khu-vuc", icon: ShieldCheck },
   { title: "Cài đặt", href: "/cai-dat", icon: Settings },
 ];
 

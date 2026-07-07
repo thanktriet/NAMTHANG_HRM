@@ -35,7 +35,7 @@ export default function HomePage() {
         <div className="landing-footer">
           <div className="landing-footer-item">
             <Phone size={14} />
-            <span>1900 xxxx</span>
+            <span>0938 267 888</span>
           </div>
           <div className="landing-footer-item">
             <MapPin size={14} />

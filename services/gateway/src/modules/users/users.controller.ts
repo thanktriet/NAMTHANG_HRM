@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Param,
   Body,
@@ -32,6 +33,27 @@ export class UsersController {
   async getWorkAreas(@CurrentUser() user: any) {
     this.ensureAdmin(user);
     return this.usersService.getWorkAreas();
+  }
+
+  @Get('meta/roles')
+  async getRoles(@CurrentUser() user: any) {
+    this.ensureAdmin(user);
+    return this.usersService.getRoles();
+  }
+
+  @Post()
+  async create(
+    @Body()
+    body: {
+      username?: string;
+      password?: string;
+      role_id?: string | null;
+      work_area?: string | null;
+    },
+    @CurrentUser() user: any,
+  ) {
+    this.ensureAdmin(user);
+    return this.usersService.create(body);
   }
 
   @Patch(':id/work-area')
