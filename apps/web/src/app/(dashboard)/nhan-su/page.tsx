@@ -48,7 +48,7 @@ export default function NhanSuPage() {
           return;
         }
 
-        const res = await fetch("http://localhost:4000/api/v1/employees", {
+        const res = await fetch("/api-proxy/api/v1/employees", {
           headers: { Authorization: `Bearer ${token}` },
         });
 

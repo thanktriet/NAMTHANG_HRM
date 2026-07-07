@@ -62,17 +62,20 @@ const KANBAN_COLUMN_COLORS: Record<string, string> = {
 
 const KANBAN_COLUMNS_ORDER = ["new", "screening", "interview", "evaluation", "offer", "hired", "rejected"]
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "—"
   const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return "—"
   const day = String(d.getDate()).padStart(2, "0")
   const month = String(d.getMonth() + 1).padStart(2, "0")
   const year = d.getFullYear()
   return `${day}/${month}/${year}`
 }
 
-function formatSalary(salary: string): string {
+function formatSalary(salary: string | null | undefined): string {
+  if (salary === null || salary === undefined || salary === "") return "—"
   const num = parseFloat(salary)
-  if (isNaN(num)) return salary
+  if (isNaN(num)) return "—"
   return new Intl.NumberFormat("vi-VN").format(num) + "đ"
 }
 
@@ -102,8 +105,8 @@ export default function RecruitmentPage() {
 
       try {
         const [candidatesRes, statsRes] = await Promise.all([
-          fetch("http://localhost:4000/api/v1/candidates", { headers }),
-          fetch("http://localhost:4000/api/v1/candidates/stats", { headers }),
+          fetch("/api-proxy/api/v1/candidates", { headers }),
+          fetch("/api-proxy/api/v1/candidates/stats", { headers }),
         ])
 
         if (!candidatesRes.ok) {

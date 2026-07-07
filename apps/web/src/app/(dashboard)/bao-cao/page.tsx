@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 
 interface DashboardStats {
-  total_employees: number;
-  active_employees: number;
-  new_candidates: number;
-  expiring_contracts: number;
+  totalEmployees: number;
+  totalCandidates: number;
+  activeDrivers: number;
+  contractsExpiring: number;
 }
 
 interface EmployeeStats {
@@ -14,8 +14,7 @@ interface EmployeeStats {
   active: number;
   probation: number;
   resigned: number;
-  by_department?: Record<string, number>;
-  by_branch?: Record<string, number>;
+  byDepartment?: { department_name: string; count: string }[];
 }
 
 interface CandidateStats {
@@ -23,7 +22,8 @@ interface CandidateStats {
   new: number;
   screening: number;
   interview: number;
-  offered: number;
+  evaluation: number;
+  offer: number;
   hired: number;
   rejected: number;
 }
@@ -53,9 +53,9 @@ export default function BaoCaoPage() {
         const headers = { Authorization: `Bearer ${token}` };
 
         const [dashRes, empRes, candRes] = await Promise.all([
-          fetch("http://localhost:4000/api/v1/dashboard/stats", { headers }),
-          fetch("http://localhost:4000/api/v1/employees/stats", { headers }),
-          fetch("http://localhost:4000/api/v1/candidates/stats", { headers }),
+          fetch("/api-proxy/api/v1/dashboard/stats", { headers }),
+          fetch("/api-proxy/api/v1/employees/stats", { headers }),
+          fetch("/api-proxy/api/v1/candidates/stats", { headers }),
         ]);
 
         if (dashRes.ok) {
@@ -125,10 +125,10 @@ export default function BaoCaoPage() {
   }
 
   const summaryCards = [
-    { label: "Tổng nhân sự", value: dashStats?.total_employees ?? empStats?.total ?? 0, color: "#2563eb", bg: "#eff6ff", icon: "👥" },
-    { label: "Đang làm việc", value: dashStats?.active_employees ?? empStats?.active ?? 0, color: "#16a34a", bg: "#f0fdf4", icon: "✅" },
-    { label: "Ứng viên", value: candStats?.total ?? dashStats?.new_candidates ?? 0, color: "#9333ea", bg: "#faf5ff", icon: "📋" },
-    { label: "HĐ sắp hết hạn", value: dashStats?.expiring_contracts ?? 0, color: "#ea580c", bg: "#fff7ed", icon: "⚠️" },
+    { label: "Tổng nhân sự", value: dashStats?.totalEmployees ?? empStats?.total ?? 0, color: "#2563eb", bg: "#eff6ff", icon: "👥" },
+    { label: "Đang làm việc", value: empStats?.active ?? 0, color: "#16a34a", bg: "#f0fdf4", icon: "✅" },
+    { label: "Ứng viên", value: candStats?.total ?? dashStats?.totalCandidates ?? 0, color: "#9333ea", bg: "#faf5ff", icon: "📋" },
+    { label: "HĐ sắp hết hạn", value: dashStats?.contractsExpiring ?? 0, color: "#ea580c", bg: "#fff7ed", icon: "⚠️" },
   ];
 
   const employeeBreakdown = [
@@ -141,14 +141,15 @@ export default function BaoCaoPage() {
     { label: "Ứng viên mới", value: candStats?.new ?? 0, color: "#2563eb" },
     { label: "Sàng lọc", value: candStats?.screening ?? 0, color: "#7c3aed" },
     { label: "Phỏng vấn", value: candStats?.interview ?? 0, color: "#d97706" },
-    { label: "Đề xuất", value: candStats?.offered ?? 0, color: "#0891b2" },
+    { label: "Đề xuất", value: candStats?.offer ?? 0, color: "#0891b2" },
     { label: "Đã tuyển", value: candStats?.hired ?? 0, color: "#16a34a" },
     { label: "Từ chối", value: candStats?.rejected ?? 0, color: "#dc2626" },
   ];
 
-  const departmentData = empStats?.by_department
-    ? Object.entries(empStats.by_department).map(([dept, count]) => ({ dept, count }))
-    : [];
+  const departmentData = (empStats?.byDepartment || []).map((row) => ({
+    dept: row.department_name || "Chưa có phòng ban",
+    count: row.count,
+  }));
 
   return (
     <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>

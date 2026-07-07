@@ -15,11 +15,10 @@ interface AttendanceRecord {
 }
 
 interface AttendanceStats {
-  totalRecords: number;
-  onTime: number;
-  late: number;
-  earlyLeave: number;
-  absent: number;
+  total_records: number | string;
+  late_count: number | string;
+  early_leave_count: number | string;
+  total_ot_hours: number | string;
 }
 
 function getToken(): string | null {
@@ -70,8 +69,8 @@ export default function ChamCongPage() {
         const headers = { Authorization: `Bearer ${token}` };
 
         const [recordsRes, statsRes] = await Promise.all([
-          fetch("http://localhost:4000/api/v1/attendance", { headers }),
-          fetch("http://localhost:4000/api/v1/attendance/stats", { headers }),
+          fetch("/api-proxy/api/v1/attendance", { headers }),
+          fetch("/api-proxy/api/v1/attendance/stats", { headers }),
         ]);
 
         if (!recordsRes.ok) {
@@ -146,10 +145,10 @@ export default function ChamCongPage() {
   }
 
   const statCards = [
-    { label: "Tổng bản ghi", value: stats?.totalRecords ?? records.length, color: "#2563eb", bg: "#eff6ff", icon: "📊" },
-    { label: "Đúng giờ", value: stats?.onTime ?? 0, color: "#16a34a", bg: "#f0fdf4", icon: "✅" },
-    { label: "Đi trễ", value: stats?.late ?? 0, color: "#d97706", bg: "#fffbeb", icon: "⏰" },
-    { label: "Vắng mặt", value: stats?.absent ?? 0, color: "#dc2626", bg: "#fef2f2", icon: "❌" },
+    { label: "Tổng bản ghi", value: stats?.total_records ?? records.length, color: "#2563eb", bg: "#eff6ff", icon: "📊" },
+    { label: "Đi trễ", value: stats?.late_count ?? 0, color: "#d97706", bg: "#fffbeb", icon: "⏰" },
+    { label: "Về sớm", value: stats?.early_leave_count ?? 0, color: "#ea580c", bg: "#fff7ed", icon: "🏃" },
+    { label: "Giờ tăng ca", value: stats?.total_ot_hours ?? 0, color: "#4f46e5", bg: "#eef2ff", icon: "⏱️" },
   ];
 
   return (

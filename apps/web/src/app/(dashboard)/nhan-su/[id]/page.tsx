@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 
-const API_BASE = "http://localhost:4000/api/v1";
+const API_BASE = "/api-proxy/api/v1";
 
 const REQUIRED_DOCS = [
   { key: "cccd", label: "CCCD" },
@@ -137,7 +137,7 @@ export default function EmployeeDetailPage() {
       if (res.ok) {
         setRewardForm({ type: "reward", title: "", description: "", decision_number: "", effective_date: "", amount: "", file_name: "", file_path: "" });
         const r = await fetch(`${API_BASE}/employees/${employeeId}/rewards`, { headers: headers() });
-        if (r.ok) { const d = await r.json(); setRewards(d.items || []); }
+        if (r.ok) { const d = await r.json(); setRewards(d.data?.items || d.items || []); }
       } else { alert("Lỗi khi thêm khen thưởng/kỷ luật"); }
     } catch { alert("Lỗi khi thêm"); }
     finally { setAddingReward(false); }
@@ -154,7 +154,7 @@ export default function EmployeeDetailPage() {
       if (res.ok) {
         setContractForm({ contract_type: "fixed_term", start_date: "", end_date: "", base_salary: "", file_name: "", file_path: "" });
         const r = await fetch(`${API_BASE}/employees/${employeeId}/contracts`, { headers: headers() });
-        if (r.ok) { const d = await r.json(); setContracts(d.items || []); }
+        if (r.ok) { const d = await r.json(); setContracts(d.data?.items || d.items || []); }
       } else { alert("Lỗi khi thêm hợp đồng"); }
     } catch { alert("Lỗi khi thêm hợp đồng"); }
     finally { setAddingContract(false); }

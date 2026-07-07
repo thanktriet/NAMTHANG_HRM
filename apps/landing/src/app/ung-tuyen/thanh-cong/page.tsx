@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Check, Copy, Search, Clock, ChevronRight } from "lucide-react";
 
-export default function ThanhCongPage() {
+function ThanhCongContent() {
   const searchParams = useSearchParams();
   const [copied, setCopied] = useState(false);
   const applicationCode = searchParams.get("code") || "UV-2026-000123";
@@ -92,5 +92,13 @@ export default function ThanhCongPage() {
         </Link>
       </div>
     </>
+  );
+}
+
+export default function ThanhCongPage() {
+  return (
+    <Suspense fallback={null}>
+      <ThanhCongContent />
+    </Suspense>
   );
 }

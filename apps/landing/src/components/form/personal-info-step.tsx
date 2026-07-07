@@ -1,10 +1,11 @@
 "use client";
 
-import { useFormContext } from "react-hook-form";
+import { useFormContext, Controller } from "react-hook-form";
 import type { ApplicationForm } from "@/types/candidate";
+import { DateSelect } from "@/components/ui/date-select";
 
 export function PersonalInfoStep() {
-  const { register, formState: { errors } } = useFormContext<ApplicationForm>();
+  const { register, control, formState: { errors } } = useFormContext<ApplicationForm>();
 
   return (
     <div className="space-y-4">
@@ -20,28 +21,34 @@ export function PersonalInfoStep() {
         {errors.hoTen && <p className="mt-1 text-xs text-red-500">{errors.hoTen.message}</p>}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Ngày sinh *</label>
-          <input
-            {...register("ngaySinh")}
-            type="date"
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
-          />
-          {errors.ngaySinh && <p className="mt-1 text-xs text-red-500">{errors.ngaySinh.message}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Giới tính *</label>
-          <select
-            {...register("gioiTinh")}
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-white"
-          >
-            <option value="">Chọn</option>
-            <option value="nam">Nam</option>
-            <option value="nu">Nữ</option>
-          </select>
-          {errors.gioiTinh && <p className="mt-1 text-xs text-red-500">{errors.gioiTinh.message}</p>}
-        </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Ngày sinh *</label>
+        <Controller
+          control={control}
+          name="ngaySinh"
+          render={({ field }) => (
+            <DateSelect
+              value={field.value}
+              onChange={field.onChange}
+              fromYear={1960}
+              toYear={new Date().getFullYear() - 16}
+            />
+          )}
+        />
+        {errors.ngaySinh && <p className="mt-1 text-xs text-red-500">{errors.ngaySinh.message}</p>}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Giới tính *</label>
+        <select
+          {...register("gioiTinh")}
+          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-white"
+        >
+          <option value="">Chọn</option>
+          <option value="nam">Nam</option>
+          <option value="nu">Nữ</option>
+        </select>
+        {errors.gioiTinh && <p className="mt-1 text-xs text-red-500">{errors.gioiTinh.message}</p>}
       </div>
 
       <div>
@@ -55,25 +62,32 @@ export function PersonalInfoStep() {
         {errors.cccd && <p className="mt-1 text-xs text-red-500">{errors.cccd.message}</p>}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Ngày cấp *</label>
-          <input
-            {...register("ngayCap")}
-            type="date"
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
-          />
-          {errors.ngayCap && <p className="mt-1 text-xs text-red-500">{errors.ngayCap.message}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Nơi cấp *</label>
-          <input
-            {...register("noiCap")}
-            placeholder="CA TP.HCM"
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
-          />
-          {errors.noiCap && <p className="mt-1 text-xs text-red-500">{errors.noiCap.message}</p>}
-        </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Ngày cấp *</label>
+        <Controller
+          control={control}
+          name="ngayCap"
+          render={({ field }) => (
+            <DateSelect
+              value={field.value}
+              onChange={field.onChange}
+              fromYear={2016}
+              toYear={new Date().getFullYear()}
+              yearDesc={true}
+            />
+          )}
+        />
+        {errors.ngayCap && <p className="mt-1 text-xs text-red-500">{errors.ngayCap.message}</p>}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Nơi cấp *</label>
+        <input
+          {...register("noiCap")}
+          placeholder="CA TP.HCM"
+          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+        />
+        {errors.noiCap && <p className="mt-1 text-xs text-red-500">{errors.noiCap.message}</p>}
       </div>
 
       <div>

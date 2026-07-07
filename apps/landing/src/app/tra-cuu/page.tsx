@@ -108,7 +108,7 @@ export default function TraCuuPage() {
       if (code) params.set("code", code);
       if (phone) params.set("phone", phone);
 
-      const res = await fetch(`http://localhost:4000/api/v1/candidates/lookup?${params.toString()}`);
+      const res = await fetch(`/api-proxy/api/v1/candidates/lookup?${params.toString()}`);
 
       if (res.status === 404) {
         setResult(null);

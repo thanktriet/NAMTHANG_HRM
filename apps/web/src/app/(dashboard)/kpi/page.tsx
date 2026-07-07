@@ -4,21 +4,26 @@ import { useState, useEffect } from "react";
 
 interface KpiEvaluation {
   id: string;
-  employeeCode: string;
-  employeeName: string;
-  department: string;
+  employee_code: string;
+  full_name: string;
+  department_name: string;
   period: string;
-  score: number;
+  score: number | string;
   grade: string;
   evaluator?: string;
   evaluatedAt?: string;
 }
 
 interface KpiStats {
-  currentPeriod: string;
-  totalEvaluated: number;
-  pendingEvaluation: number;
-  averageScore: number;
+  // Backend (kpi/stats) trả về các field snake_case dưới đây.
+  total_evaluations?: number | string;
+  average_score?: number | string;
+  excellent_count?: number | string;
+  good_count?: number | string;
+  needs_improvement_count?: number | string;
+  // Các field dưới đây backend hiện không trả về → hiển thị "—".
+  currentPeriod?: string;
+  pendingEvaluation?: number;
 }
 
 function getToken(): string | null {
@@ -56,8 +61,8 @@ export default function KpiPage() {
         const headers = { Authorization: `Bearer ${token}` };
 
         const [evalRes, statsRes] = await Promise.all([
-          fetch("http://localhost:4000/api/v1/kpi/evaluations", { headers }),
-          fetch("http://localhost:4000/api/v1/kpi/stats", { headers }),
+          fetch("/api-proxy/api/v1/kpi/evaluations", { headers }),
+          fetch("/api-proxy/api/v1/kpi/stats", { headers }),
         ]);
 
         if (!evalRes.ok) {
@@ -123,11 +128,12 @@ export default function KpiPage() {
     );
   }
 
+  const avgScoreNum = stats?.average_score != null ? Number(stats.average_score) : null;
   const statCards = [
     { label: "Kỳ đánh giá", value: stats?.currentPeriod ?? "—", color: "#2563eb", bg: "#eff6ff", icon: "📅" },
-    { label: "Đã đánh giá", value: stats?.totalEvaluated ?? evaluations.length, color: "#16a34a", bg: "#f0fdf4", icon: "✅" },
-    { label: "Chưa đánh giá", value: stats?.pendingEvaluation ?? 0, color: "#d97706", bg: "#fffbeb", icon: "⏳" },
-    { label: "Điểm trung bình", value: stats?.averageScore ? stats.averageScore.toFixed(1) : "—", color: "#9333ea", bg: "#faf5ff", icon: "📊" },
+    { label: "Đã đánh giá", value: stats?.total_evaluations ?? evaluations.length, color: "#16a34a", bg: "#f0fdf4", icon: "✅" },
+    { label: "Chưa đánh giá", value: stats?.pendingEvaluation ?? "—", color: "#d97706", bg: "#fffbeb", icon: "⏳" },
+    { label: "Điểm trung bình", value: avgScoreNum != null && !isNaN(avgScoreNum) ? avgScoreNum.toFixed(1) : "—", color: "#9333ea", bg: "#faf5ff", icon: "📊" },
   ];
 
   return (
@@ -221,13 +227,13 @@ export default function KpiPage() {
                 return (
                   <tr key={ev.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                     <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 500, color: "#2563eb" }}>
-                      {ev.employeeCode}
+                      {ev.employee_code}
                     </td>
                     <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 500, color: "#111827" }}>
-                      {ev.employeeName}
+                      {ev.full_name}
                     </td>
                     <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151" }}>
-                      {ev.department}
+                      {ev.department_name}
                     </td>
                     <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151" }}>
                       {ev.period}

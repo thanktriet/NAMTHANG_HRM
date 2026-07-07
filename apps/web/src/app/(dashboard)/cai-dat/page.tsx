@@ -137,7 +137,7 @@ export default function CaiDatPage() {
               { label: "Backend", value: "NestJS + PostgreSQL" },
               { label: "Frontend", value: "Next.js 15" },
               { label: "Database", value: "PostgreSQL 18 - localhost:5432" },
-              { label: "API Gateway", value: "http://localhost:4000" },
+              { label: "API Gateway", value: "/api-proxy" },
               { label: "Trạng thái", value: "🟢 Hoạt động" },
             ].map((item) => (
               <div key={item.label} style={{ display: "flex", padding: "10px 0", borderBottom: "1px solid #f3f4f6" }}>

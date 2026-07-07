@@ -8,17 +8,21 @@ interface Asset {
   name: string;
   category: string;
   assigned_to?: string;
-  handover_date?: string;
+  // Backend (assets.service.ts findAll -> SELECT a.*) exposes purchase_date; there is
+  // no handover/assignment date column in the SELECT, so this stays optional/nullable.
+  purchase_date?: string | null;
   status: string;
-  value?: number;
+  // Backend column is current_value (DECIMAL, arrives as a string like "12000000.00")
+  current_value?: number | string | null;
 }
 
 interface AssetStats {
-  total: number;
-  inUse: number;
-  maintenance: number;
-  liquidated: number;
-  available: number;
+  // Backend (assets.service.ts getStats) returns: total, available, in_use, maintenance, disposed
+  total?: number | string | null;
+  in_use?: number | string | null;
+  maintenance?: number | string | null;
+  disposed?: number | string | null;
+  available?: number | string | null;
 }
 
 function getToken(): string | null {
@@ -26,16 +30,17 @@ function getToken(): string | null {
   return localStorage.getItem("namthang_hrm_token");
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
+  if (isNaN(d.getTime())) return "—";
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
 }
 
-function formatCurrency(amount: number): string {
-  if (!amount && amount !== 0) return "—";
-  return amount.toLocaleString("vi-VN") + " ₫";
+function formatCurrency(amount: number | string | null | undefined): string {
+  const n = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (n == null || isNaN(n)) return "—";
+  return n.toLocaleString("vi-VN") + " ₫";
 }
 
 const statusColors: Record<string, { bg: string; color: string; label: string }> = {
@@ -68,8 +73,8 @@ export default function TaiSanPage() {
         const headers = { Authorization: `Bearer ${token}` };
 
         const [assetsRes, statsRes] = await Promise.all([
-          fetch("http://localhost:4000/api/v1/assets", { headers }),
-          fetch("http://localhost:4000/api/v1/assets/stats", { headers }),
+          fetch("/api-proxy/api/v1/assets", { headers }),
+          fetch("/api-proxy/api/v1/assets/stats", { headers }),
         ]);
 
         if (!assetsRes.ok) {
@@ -149,9 +154,9 @@ export default function TaiSanPage() {
 
   const statCards = [
     { label: "Tổng tài sản", value: stats?.total ?? assets.length, color: "#2563eb", bg: "#eff6ff", icon: "🏢" },
-    { label: "Đang sử dụng", value: stats?.inUse ?? 0, color: "#16a34a", bg: "#f0fdf4", icon: "✅" },
+    { label: "Đang sử dụng", value: stats?.in_use ?? 0, color: "#16a34a", bg: "#f0fdf4", icon: "✅" },
     { label: "Bảo trì", value: stats?.maintenance ?? 0, color: "#d97706", bg: "#fffbeb", icon: "🔧" },
-    { label: "Thanh lý", value: stats?.liquidated ?? 0, color: "#dc2626", bg: "#fef2f2", icon: "🗑️" },
+    { label: "Thanh lý", value: stats?.disposed ?? 0, color: "#dc2626", bg: "#fef2f2", icon: "🗑️" },
   ];
 
   return (
@@ -340,10 +345,10 @@ export default function TaiSanPage() {
                       {asset.assigned_to || "—"}
                     </td>
                     <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151" }}>
-                      {formatDate(asset.handover_date || "")}
+                      {formatDate(asset.purchase_date)}
                     </td>
                     <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151" }}>
-                      {asset.value ? formatCurrency(asset.value) : "—"}
+                      {formatCurrency(asset.current_value)}
                     </td>
                     <td style={{ padding: "12px 16px" }}>
                       <span

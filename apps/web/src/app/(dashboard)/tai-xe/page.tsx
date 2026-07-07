@@ -18,29 +18,29 @@ interface Driver {
 
 interface License {
   id: string;
-  driverName: string;
-  licenseNumber: string;
-  licenseClass: string;
-  issueDate: string;
-  expiryDate: string;
+  full_name: string;
+  license_number: string;
+  license_class: string;
+  issue_date: string;
+  expiry_date: string;
   status: string;
 }
 
 interface Dispatch {
   id: string;
-  driverName: string;
-  vehiclePlate: string;
-  route: string;
-  startDate: string;
-  endDate?: string;
+  driver_name: string;
+  plate_number: string;
+  origin: string;
+  destination: string;
+  departure_time?: string;
+  arrival_time?: string;
   status: string;
 }
 
 interface DriverStats {
-  total: number;
-  active: number;
-  onLeave: number;
-  licenseExpiring: number;
+  total_drivers: number;
+  active_drivers: number;
+  licenses_expiring: number;
 }
 
 function getToken(): string | null {
@@ -48,10 +48,10 @@ function getToken(): string | null {
   return localStorage.getItem("namthang_hrm_token");
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
+  if (isNaN(d.getTime())) return "—";
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
 }
 
@@ -97,10 +97,10 @@ export default function TaiXePage() {
         const headers = { Authorization: `Bearer ${token}` };
 
         const [driversRes, licensesRes, dispatchRes, statsRes] = await Promise.all([
-          fetch("http://localhost:4000/api/v1/drivers", { headers }),
-          fetch("http://localhost:4000/api/v1/drivers/licenses/expiring", { headers }),
-          fetch("http://localhost:4000/api/v1/drivers/dispatch", { headers }),
-          fetch("http://localhost:4000/api/v1/drivers/stats", { headers }),
+          fetch("/api-proxy/api/v1/drivers", { headers }),
+          fetch("/api-proxy/api/v1/drivers/licenses/expiring", { headers }),
+          fetch("/api-proxy/api/v1/drivers/dispatch", { headers }),
+          fetch("/api-proxy/api/v1/drivers/stats", { headers }),
         ]);
 
         if (!driversRes.ok) {
@@ -112,12 +112,12 @@ export default function TaiXePage() {
 
         if (licensesRes.ok) {
           const licensesData = await licensesRes.json();
-          setLicenses(licensesData.data || licensesData || []);
+          setLicenses(licensesData.data?.items || licensesData.data || []);
         }
 
         if (dispatchRes.ok) {
           const dispatchData = await dispatchRes.json();
-          setDispatches(dispatchData.data || dispatchData || []);
+          setDispatches(dispatchData.data?.items || dispatchData.data || []);
         }
 
         if (statsRes.ok) {
@@ -177,10 +177,10 @@ export default function TaiXePage() {
   }
 
   const statCards = [
-    { label: "Tổng tài xế", value: stats?.total ?? drivers.length, color: "#2563eb", bg: "#eff6ff", icon: "🚗" },
-    { label: "Đang hoạt động", value: stats?.active ?? 0, color: "#16a34a", bg: "#f0fdf4", icon: "✅" },
-    { label: "Nghỉ phép", value: stats?.onLeave ?? 0, color: "#d97706", bg: "#fffbeb", icon: "📋" },
-    { label: "GPLX sắp hết hạn", value: stats?.licenseExpiring ?? licenses.length, color: "#dc2626", bg: "#fef2f2", icon: "⚠️" },
+    { label: "Tổng tài xế", value: stats?.total_drivers ?? drivers.length, color: "#2563eb", bg: "#eff6ff", icon: "🚗" },
+    { label: "Đang hoạt động", value: stats?.active_drivers ?? 0, color: "#16a34a", bg: "#f0fdf4", icon: "✅" },
+    { label: "Nghỉ phép", value: 0, color: "#d97706", bg: "#fffbeb", icon: "📋" },
+    { label: "GPLX sắp hết hạn", value: stats?.licenses_expiring ?? licenses.length, color: "#dc2626", bg: "#fef2f2", icon: "⚠️" },
   ];
 
   const tabs = [
@@ -392,19 +392,19 @@ export default function TaiXePage() {
                   return (
                     <tr key={lic.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                       <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 500, color: "#111827" }}>
-                        {lic.driverName}
+                        {lic.full_name}
                       </td>
                       <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151" }}>
-                        {lic.licenseNumber}
+                        {lic.license_number}
                       </td>
                       <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151" }}>
-                        {lic.licenseClass}
+                        {lic.license_class}
                       </td>
                       <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151" }}>
-                        {formatDate(lic.issueDate)}
+                        {formatDate(lic.issue_date)}
                       </td>
                       <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151" }}>
-                        {formatDate(lic.expiryDate)}
+                        {formatDate(lic.expiry_date)}
                       </td>
                       <td style={{ padding: "12px 16px" }}>
                         <span
@@ -475,19 +475,19 @@ export default function TaiXePage() {
                   return (
                     <tr key={d.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                       <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 500, color: "#111827" }}>
-                        {d.driverName}
+                        {d.driver_name}
                       </td>
                       <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151", fontWeight: 500 }}>
-                        {d.vehiclePlate}
+                        {d.plate_number}
                       </td>
                       <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151" }}>
-                        {d.route}
+                        {[d.origin, d.destination].filter(Boolean).join(" → ") || "—"}
                       </td>
                       <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151" }}>
-                        {formatDate(d.startDate)}
+                        {formatDate(d.departure_time)}
                       </td>
                       <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151" }}>
-                        {formatDate(d.endDate || "")}
+                        {formatDate(d.arrival_time)}
                       </td>
                       <td style={{ padding: "12px 16px" }}>
                         <span

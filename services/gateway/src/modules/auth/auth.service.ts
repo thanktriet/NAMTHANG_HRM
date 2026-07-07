@@ -15,6 +15,8 @@ export interface JwtPayload {
   sub: string;
   username: string;
   roles: string[];
+  work_area?: string | null;
+  isAdmin?: boolean;
 }
 
 @Injectable()
@@ -33,7 +35,9 @@ export class AuthService {
 
   async validateUser(username: string, password: string): Promise<any> {
     const result = await this.pool.query(
-      'SELECT id, username, password_hash, status FROM users WHERE username = $1 AND deleted_at IS NULL',
+      `SELECT u.id, u.username, u.password_hash, u.status, u.work_area, r.name AS role_name
+       FROM users u LEFT JOIN roles r ON u.role_id = r.id
+       WHERE u.username = $1 AND u.deleted_at IS NULL`,
       [username],
     );
 
@@ -51,6 +55,9 @@ export class AuthService {
       id: user.id,
       username: user.username,
       status: user.status,
+      work_area: user.work_area,
+      role_name: user.role_name,
+      isAdmin: user.role_name === 'Quản trị hệ thống',
     };
   }
 
@@ -165,6 +172,8 @@ export class AuthService {
       sub: user.id,
       username: user.username,
       roles: ['admin'],
+      work_area: user.work_area ?? null,
+      isAdmin: user.isAdmin === true,
     };
 
     const [accessToken, refreshToken] = await Promise.all([

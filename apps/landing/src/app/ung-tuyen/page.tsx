@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { DateSelect } from "@/components/ui/date-select";
+import { MonthSelect } from "@/components/ui/month-select";
 import {
   Truck,
   User,
   Briefcase,
   Upload,
   Camera,
-  Video,
   Shield,
   Info,
   ChevronLeft,
@@ -22,12 +23,52 @@ import {
 
 const STEPS = ["Cá nhân", "Nghề nghiệp", "Giấy tờ", "Hình ảnh", "Cam kết"];
 
+// API qua nginx proxy (/api-proxy/ -> gateway). Chạy được cả trên production lẫn khi truy cập qua domain.
+const API_BASE = "/api-proxy/api/v1";
+
 export default function UngTuyenPage() {
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [checks, setChecks] = useState([false, false, false, false]);
+  const [draftLoaded, setDraftLoaded] = useState(false);
   const router = useRouter();
+
+  // Giữ File thật để upload (KHÔNG lưu vào formData/localStorage)
+  const filesRef = useRef<Record<string, File>>({});
+  const setFile = (name: string, file: File) => {
+    filesRef.current[name] = file;
+  };
+
+  const DRAFT_KEY = "nthrm_ung_tuyen_draft";
+
+  // Khôi phục bản nháp khi vào lại (chạy ngầm, không thông báo)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const draft = JSON.parse(raw);
+        if (draft.formData) setFormData(draft.formData);
+        if (typeof draft.step === "number") setStep(draft.step);
+      }
+    } catch {
+      // bỏ qua nếu localStorage lỗi
+    }
+    setDraftLoaded(true);
+  }, []);
+
+  // Tự động lưu nháp mỗi khi dữ liệu hoặc bước thay đổi
+  useEffect(() => {
+    if (!draftLoaded) return; // chỉ lưu sau khi đã khôi phục xong
+    try {
+      const hasData = Object.values(formData).some((v) => v && v.trim());
+      if (hasData) {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ formData, step }));
+      }
+    } catch {
+      // bỏ qua
+    }
+  }, [formData, step, draftLoaded]);
 
   const updateField = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -36,7 +77,7 @@ export default function UngTuyenPage() {
   const handleNext = () => {
     // Validate từng bước
     if (step === 0) {
-      const required = ["hoTen", "ngaySinh", "gioiTinh", "cccd", "ngayCap", "noiCap", "diaChi", "email", "sdt"];
+      const required = ["hoTen", "ngaySinh", "gioiTinh", "cccd", "ngayCap", "noiCap", "diaChi", "sdt"];
       const missing = required.filter((f) => !formData[f]?.trim());
       if (missing.length > 0) {
         alert("Vui lòng điền đầy đủ các trường bắt buộc (*)");
@@ -56,14 +97,29 @@ export default function UngTuyenPage() {
       }
     }
     if (step === 1) {
-      const required = ["viTri", "hangGPLX", "kinhNghiem", "luong"];
+      const required = ["viTri", "hangGPLX", "kinhNghiem"];
       const missing = required.filter((f) => !formData[f]?.trim());
       if (missing.length > 0) {
         alert("Vui lòng điền đầy đủ các trường bắt buộc (*)");
         return;
       }
     }
-    // Step 2 (giấy tờ) và Step 3 (hình ảnh) - không bắt buộc validate file ở client
+    if (step === 2) {
+      const requiredFiles: [string, string][] = [
+        ["fileCccdTruoc", "Ảnh CCCD mặt trước"],
+        ["fileCccdSau", "Ảnh CCCD mặt sau"],
+        ["fileGplxTruoc", "GPLX mặt trước"],
+        ["fileGplxSau", "GPLX mặt sau"],
+        ["fileSoYeuLyLich", "Sơ yếu lý lịch"],
+        ["fileGiayKhamSK", "Giấy khám sức khỏe"],
+      ];
+      const missingFiles = requiredFiles.filter(([f]) => !filesRef.current[f]);
+      if (missingFiles.length > 0) {
+        alert("Vui lòng tải lên đầy đủ giấy tờ bắt buộc:\n- " + missingFiles.map(([, l]) => l).join("\n- "));
+        return;
+      }
+    }
+    // Step 3 (hình ảnh) - không bắt buộc validate file ở client
     // Step 4 (cam kết) - validate ở handleSubmit
 
     if (step < STEPS.length - 1) setStep(step + 1);
@@ -103,9 +159,6 @@ export default function UngTuyenPage() {
         .filter(Boolean)
         .join(" - ");
 
-      // Extract salary number
-      const salaryNum = (formData.luong || "").replace(/[^0-9]/g, "");
-
       const body = {
         full_name: formData.hoTen || "",
         date_of_birth: formData.ngaySinh || "",
@@ -122,10 +175,10 @@ export default function UngTuyenPage() {
         experience_years: experienceYears,
         last_company: formData.congTy || "",
         work_period: workPeriod,
-        expected_salary: salaryNum,
+        work_area: formData.khuVuc || "",
       };
 
-      const res = await fetch("http://localhost:4000/api/v1/candidates", {
+      const res = await fetch(`${API_BASE}/candidates`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -137,7 +190,45 @@ export default function UngTuyenPage() {
         throw new Error(json.message || "Có lỗi xảy ra khi nộp hồ sơ.");
       }
 
+      const candidateId = json.data?.id || "";
       const code = json.data?.code || "";
+
+      // Upload giấy tờ/ảnh (nếu có)
+      const files = filesRef.current;
+      const fileEntries = Object.entries(files);
+      if (candidateId && fileEntries.length > 0) {
+        // Map tên field -> document_type enum của backend
+        const typeMap: Record<string, string> = {
+          fileCccdTruoc: "cccd_front",
+          fileCccdSau: "cccd_back",
+          fileGplxTruoc: "gplx",
+          fileGplxSau: "gplx",
+          fileSoYeuLyLich: "cv",
+          fileGiayKhamSK: "health_cert",
+          filePortrait: "portrait",
+          fileFullBody: "full_body",
+        };
+        const fd = new FormData();
+        for (const [name, file] of fileEntries) {
+          fd.append("files", file);
+          fd.append("types", typeMap[name] || "cv");
+        }
+        const uploadRes = await fetch(`${API_BASE}/candidates/${candidateId}/documents`, {
+          method: "POST",
+          body: fd,
+        });
+        if (!uploadRes.ok) {
+          throw new Error("Nộp thông tin thành công nhưng tải giấy tờ thất bại. Vui lòng liên hệ để bổ sung.");
+        }
+      }
+
+      // Xoá nháp sau khi nộp thành công toàn bộ
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch {
+        // bỏ qua
+      }
+
       router.push(`/ung-tuyen/thanh-cong?code=${encodeURIComponent(code)}`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Có lỗi xảy ra. Vui lòng thử lại.";
@@ -186,8 +277,8 @@ export default function UngTuyenPage() {
       <div className="step-panel" key={step}>
         {step === 0 && <Step1 data={formData} onChange={updateField} />}
         {step === 1 && <Step2 data={formData} onChange={updateField} />}
-        {step === 2 && <Step3 />}
-        {step === 3 && <Step4 />}
+        {step === 2 && <Step3 onFile={setFile} />}
+        {step === 3 && <Step4 onFile={setFile} />}
         {step === 4 && <Step5 checks={checks} setChecks={setChecks} />}
       </div>
 
@@ -240,32 +331,28 @@ function Step1({ data, onChange }: { data: Record<string, string>; onChange: (n:
         <label>Họ và tên <span className="req">*</span></label>
         <input type="text" placeholder="Nguyễn Văn An" value={data.hoTen || ""} onChange={(e) => onChange("hoTen", e.target.value)} />
       </div>
-      <div className="field-row">
-        <div className="field-group">
-          <label>Ngày sinh <span className="req">*</span></label>
-          <input type="date" value={data.ngaySinh || ""} onChange={(e) => onChange("ngaySinh", e.target.value)} />
-        </div>
-        <div className="field-group">
-          <label>Giới tính <span className="req">*</span></label>
-          <div className="gender-toggle">
-            <button type="button" className={`gender-btn ${data.gioiTinh === "Nam" ? "selected" : ""}`} onClick={() => onChange("gioiTinh", "Nam")}>Nam</button>
-            <button type="button" className={`gender-btn ${data.gioiTinh === "Nữ" ? "selected" : ""}`} onClick={() => onChange("gioiTinh", "Nữ")}>Nữ</button>
-          </div>
+      <div className="field-group">
+        <label>Ngày sinh <span className="req">*</span></label>
+        <DateSelect value={data.ngaySinh || ""} onChange={(v) => onChange("ngaySinh", v)} fromYear={1960} toYear={new Date().getFullYear() - 16} />
+      </div>
+      <div className="field-group">
+        <label>Giới tính <span className="req">*</span></label>
+        <div className="gender-toggle">
+          <button type="button" className={`gender-btn ${data.gioiTinh === "Nam" ? "selected" : ""}`} onClick={() => onChange("gioiTinh", "Nam")}>Nam</button>
+          <button type="button" className={`gender-btn ${data.gioiTinh === "Nữ" ? "selected" : ""}`} onClick={() => onChange("gioiTinh", "Nữ")}>Nữ</button>
         </div>
       </div>
       <div className="field-group">
         <label>Số CCCD / CMND <span className="req">*</span></label>
         <input type="text" placeholder="012345678901" maxLength={12} value={data.cccd || ""} onChange={(e) => onChange("cccd", e.target.value)} />
       </div>
-      <div className="field-row">
-        <div className="field-group">
-          <label>Ngày cấp <span className="req">*</span></label>
-          <input type="date" value={data.ngayCap || ""} onChange={(e) => onChange("ngayCap", e.target.value)} />
-        </div>
-        <div className="field-group">
-          <label>Nơi cấp <span className="req">*</span></label>
-          <input type="text" placeholder="Cục CS QLHC..." value={data.noiCap || ""} onChange={(e) => onChange("noiCap", e.target.value)} />
-        </div>
+      <div className="field-group">
+        <label>Ngày cấp <span className="req">*</span></label>
+        <DateSelect value={data.ngayCap || ""} onChange={(v) => onChange("ngayCap", v)} fromYear={2016} toYear={new Date().getFullYear()} />
+      </div>
+      <div className="field-group">
+        <label>Nơi cấp <span className="req">*</span></label>
+        <input type="text" placeholder="Cục CS QLHC..." value={data.noiCap || ""} onChange={(e) => onChange("noiCap", e.target.value)} />
       </div>
       <div className="field-group">
         <label>Địa chỉ thường trú <span className="req">*</span></label>
@@ -276,7 +363,7 @@ function Step1({ data, onChange }: { data: Record<string, string>; onChange: (n:
         <input type="text" placeholder="Để trống nếu giống thường trú" value={data.diaChiHT || ""} onChange={(e) => onChange("diaChiHT", e.target.value)} />
       </div>
       <div className="field-group">
-        <label>Email <span className="req">*</span></label>
+        <label>Email</label>
         <input type="email" placeholder="example@gmail.com" value={data.email || ""} onChange={(e) => onChange("email", e.target.value)} />
       </div>
       <div className="field-group">
@@ -298,12 +385,9 @@ function Step2({ data, onChange }: { data: Record<string, string>; onChange: (n:
         <label>Vị trí ứng tuyển <span className="req">*</span></label>
         <select value={data.viTri || ""} onChange={(e) => onChange("viTri", e.target.value)}>
           <option value="">-- Chọn vị trí --</option>
-          <option>Lái xe tải hạng nặng (trên 10 tấn)</option>
-          <option>Lái xe tải trung (5-10 tấn)</option>
-          <option>Lái xe tải nhẹ (dưới 5 tấn)</option>
-          <option>Lái xe container</option>
-          <option>Lái xe đầu kéo</option>
-          <option>Lái xe bồn</option>
+          <option>Tài xế xe 5 chỗ</option>
+          <option>Tài xế xe 7 chỗ</option>
+          <option>Tài xế xe bus</option>
         </select>
       </div>
       <div className="field-group">
@@ -336,38 +420,23 @@ function Step2({ data, onChange }: { data: Record<string, string>; onChange: (n:
       <div className="field-row">
         <div className="field-group">
           <label>Từ tháng/năm</label>
-          <input type="month" value={data.tuThang || ""} onChange={(e) => onChange("tuThang", e.target.value)} />
+          <MonthSelect value={data.tuThang || ""} onChange={(v) => onChange("tuThang", v)} fromYear={1990} />
         </div>
         <div className="field-group">
           <label>Đến tháng/năm</label>
-          <input type="month" value={data.denThang || ""} onChange={(e) => onChange("denThang", e.target.value)} />
+          <MonthSelect value={data.denThang || ""} onChange={(v) => onChange("denThang", v)} fromYear={1990} />
         </div>
-      </div>
-      <div className="field-group">
-        <label>Lý do nghỉ việc</label>
-        <select value={data.lyDoNghi || ""} onChange={(e) => onChange("lyDoNghi", e.target.value)}>
-          <option value="">-- Chọn lý do --</option>
-          <option>Mức lương không phù hợp</option>
-          <option>Môi trường làm việc</option>
-          <option>Cơ hội phát triển</option>
-          <option>Hết hợp đồng</option>
-          <option>Lý do cá nhân</option>
-        </select>
-      </div>
-      <div className="field-group">
-        <label>Mức lương mong muốn <span className="req">*</span></label>
-        <input type="text" placeholder="12,000,000 VND" value={data.luong || ""} onChange={(e) => onChange("luong", e.target.value)} />
       </div>
       <div className="field-group">
         <label>Khu vực làm việc mong muốn</label>
         <select value={data.khuVuc || ""} onChange={(e) => onChange("khuVuc", e.target.value)}>
           <option value="">-- Chọn khu vực --</option>
-          <option>Hà Nội</option>
-          <option>TP. Hồ Chí Minh</option>
-          <option>Đà Nẵng</option>
-          <option>Toàn quốc</option>
-          <option>Các tỉnh phía Bắc</option>
-          <option>Các tỉnh phía Nam</option>
+          <option>Rạch Giá</option>
+          <option>Phú Quốc</option>
+          <option>An Giang</option>
+          <option>Cần Thơ</option>
+          <option>Sóc Trăng</option>
+          <option>Cà Mau</option>
         </select>
       </div>
     </div>
@@ -375,13 +444,16 @@ function Step2({ data, onChange }: { data: Record<string, string>; onChange: (n:
 }
 
 /* ============ STEP 3: Upload giấy tờ ============ */
-function UploadBox({ icon, label, sub, accept }: { icon: React.ReactNode; label: string; sub: string; accept?: string }) {
+function UploadBox({ icon, label, sub, accept, name, onFile }: { icon: React.ReactNode; label: string; sub: string; accept?: string; name?: string; onFile?: (name: string, file: File) => void }) {
   const [file, setFile] = useState<File | null>(null);
   const inputId = `upload-${label.replace(/\s/g, '-')}`;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f) setFile(f);
+    if (f) {
+      setFile(f);
+      if (name && onFile) onFile(name, f);
+    }
   };
 
   return (
@@ -410,7 +482,7 @@ function UploadBox({ icon, label, sub, accept }: { icon: React.ReactNode; label:
   );
 }
 
-function Step3() {
+function Step3({ onFile }: { onFile: (name: string, file: File) => void }) {
   return (
     <div className="form-body">
       <div className="form-title">
@@ -422,53 +494,49 @@ function Step3() {
       </div>
       <div className="field-group">
         <label>CCCD mặt trước <span className="req">*</span></label>
-        <UploadBox icon={<Upload size={24} />} label="Chọn ảnh CCCD mặt trước" sub="JPG, PNG - Tối đa 5MB" />
+        <UploadBox icon={<Upload size={24} />} label="Chọn ảnh CCCD mặt trước" sub="JPG, PNG - Tối đa 5MB" name="fileCccdTruoc" onFile={onFile} />
       </div>
       <div className="field-group">
         <label>CCCD mặt sau <span className="req">*</span></label>
-        <UploadBox icon={<Upload size={24} />} label="Chọn ảnh CCCD mặt sau" sub="JPG, PNG - Tối đa 5MB" />
+        <UploadBox icon={<Upload size={24} />} label="Chọn ảnh CCCD mặt sau" sub="JPG, PNG - Tối đa 5MB" name="fileCccdSau" onFile={onFile} />
       </div>
       <div className="field-group">
         <label>Giấy phép lái xe (GPLX) <span className="req">*</span></label>
         <div className="upload-grid">
-          <UploadBox icon={<Upload size={24} />} label="GPLX mặt trước" sub="Tối đa 5MB" />
-          <UploadBox icon={<Upload size={24} />} label="GPLX mặt sau" sub="Tối đa 5MB" />
+          <UploadBox icon={<Upload size={24} />} label="GPLX mặt trước" sub="Tối đa 5MB" name="fileGplxTruoc" onFile={onFile} />
+          <UploadBox icon={<Upload size={24} />} label="GPLX mặt sau" sub="Tối đa 5MB" name="fileGplxSau" onFile={onFile} />
         </div>
       </div>
       <div className="field-group">
         <label>Sơ yếu lý lịch <span className="req">*</span></label>
-        <UploadBox icon={<Upload size={24} />} label="Tải sơ yếu lý lịch" sub="PDF, DOC, JPG - Tối đa 10MB" accept="application/pdf,.doc,.docx,image/jpeg,image/png" />
+        <UploadBox icon={<Upload size={24} />} label="Tải sơ yếu lý lịch" sub="PDF, DOC, JPG - Tối đa 10MB" accept="application/pdf,.doc,.docx,image/jpeg,image/png" name="fileSoYeuLyLich" onFile={onFile} />
       </div>
       <div className="field-group">
-        <label>Giấy khám sức khỏe</label>
-        <UploadBox icon={<Upload size={24} />} label="Giấy khám sức khỏe (nếu có)" sub="PDF, JPG - Tối đa 10MB" accept="application/pdf,image/jpeg,image/png" />
+        <label>Giấy khám sức khỏe <span className="req">*</span></label>
+        <UploadBox icon={<Upload size={24} />} label="Tải giấy khám sức khỏe" sub="PDF, JPG - Tối đa 10MB" accept="application/pdf,image/jpeg,image/png" name="fileGiayKhamSK" onFile={onFile} />
       </div>
     </div>
   );
 }
 
-/* ============ STEP 4: Hình ảnh & Video ============ */
-function Step4() {
+/* ============ STEP 4: Hình ảnh ============ */
+function Step4({ onFile }: { onFile: (name: string, file: File) => void }) {
   return (
     <div className="form-body">
       <div className="form-title">
-        <Camera size={18} /> Hình ảnh &amp; Video
+        <Camera size={18} /> Hình ảnh
       </div>
       <div className="tip-box">
         <Info size={16} />
-        <p>Ảnh chân dung nên chụp nền trắng/sáng, nhìn thẳng. Video xác minh 10-15 giây.</p>
+        <p>Ảnh chân dung nên chụp nền trắng/sáng, nhìn thẳng.</p>
       </div>
       <div className="field-group">
         <label>Ảnh chân dung <span className="req">*</span></label>
-        <UploadBox icon={<Camera size={24} />} label="Chọn ảnh chân dung" sub="JPG, PNG - Tối đa 5MB - Nên nền trắng" accept="image/jpeg,image/png" />
+        <UploadBox icon={<Camera size={24} />} label="Chọn ảnh chân dung" sub="JPG, PNG - Tối đa 5MB - Nên nền trắng" accept="image/jpeg,image/png" name="filePortrait" onFile={onFile} />
       </div>
       <div className="field-group">
         <label>Ảnh toàn thân <span className="req">*</span></label>
-        <UploadBox icon={<Camera size={24} />} label="Chọn ảnh toàn thân" sub="JPG, PNG - Tối đa 5MB" accept="image/jpeg,image/png" />
-      </div>
-      <div className="field-group">
-        <label>Video xác minh (10-15 giây) <span className="req">*</span></label>
-        <UploadBox icon={<Video size={24} />} label="Quay/chọn video xác minh" sub="MP4, MOV - Tối đa 50MB - Đọc: Tên, ngày sinh, số CCCD" accept="video/mp4,video/quicktime,video/*" />
+        <UploadBox icon={<Camera size={24} />} label="Chọn ảnh toàn thân" sub="JPG, PNG - Tối đa 5MB" accept="image/jpeg,image/png" name="fileFullBody" onFile={onFile} />
       </div>
     </div>
   );

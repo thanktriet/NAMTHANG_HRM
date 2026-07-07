@@ -47,7 +47,7 @@ export default function DashboardPage() {
           return;
         }
 
-        const res = await fetch("http://localhost:4000/api/v1/dashboard/stats", {
+        const res = await fetch("/api-proxy/api/v1/dashboard/stats", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -69,13 +69,13 @@ export default function DashboardPage() {
         const token = getToken();
         if (!token) return;
 
-        const res = await fetch("http://localhost:4000/api/v1/employees/documents/missing", {
+        const res = await fetch("/api-proxy/api/v1/employees/documents/missing", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         if (res.ok) {
           const data = await res.json();
-          setMissingDocs(data.items || []);
+          setMissingDocs(data.data?.items || []);
         }
       } catch (err) {
         console.error("Lỗi khi tải danh sách hồ sơ thiếu:", err);
@@ -234,7 +234,7 @@ export default function DashboardPage() {
                     {emp.department_name || "Chưa có phòng ban"}
                   </div>
                   <div style={{ fontSize: 12, color: "#dc2626", marginTop: 4 }}>
-                    Thiếu: {emp.missing_docs.map((d) => DOC_LABELS[d] || d).join(", ")}
+                    Thiếu: {(emp.missing_docs || []).map((d) => DOC_LABELS[d] || d).join(", ")}
                   </div>
                 </div>
                 <button

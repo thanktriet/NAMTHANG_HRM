@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import {
@@ -73,7 +73,19 @@ const navItems: NavItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem("namthang_hrm_token");
+      localStorage.removeItem("namthang_hrm_refresh_token");
+      localStorage.removeItem("namthang_hrm_user");
+    } catch {
+      // bỏ qua
+    }
+    router.push("/login");
+  };
 
   const toggleExpand = (title: string) => {
     setExpandedItems((prev) =>
@@ -170,7 +182,7 @@ export function Sidebar() {
             <p className="text-sm font-medium truncate">Admin</p>
             <p className="text-xs text-muted-foreground truncate">admin@namthang.com</p>
           </div>
-          <button className="text-muted-foreground hover:text-foreground" aria-label="Đăng xuất">
+          <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground" aria-label="Đăng xuất">
             <LogOut className="h-4 w-4" />
           </button>
         </div>

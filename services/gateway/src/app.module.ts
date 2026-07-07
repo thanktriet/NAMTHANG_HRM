@@ -13,6 +13,7 @@ import { DriversModule } from './modules/drivers/drivers.module';
 import { AssetsModule } from './modules/assets/assets.module';
 import { KpiModule } from './modules/kpi/kpi.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
+import { UsersModule } from './modules/users/users.module';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -48,6 +49,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     AssetsModule,
     KpiModule,
     PayrollModule,
+    UsersModule,
   ],
   providers: [
     // Global interceptors

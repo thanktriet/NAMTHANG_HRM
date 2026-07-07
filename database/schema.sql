@@ -505,6 +505,7 @@ CREATE TABLE candidates (
     expected_salary DECIMAL(15,2),                 -- Mức lương mong muốn
     license_class license_class,                   -- Hạng GPLX (nếu là tài xế)
     license_number VARCHAR(20),                    -- Số GPLX
+    work_area VARCHAR(255),                         -- Khu vực làm việc (Rạch Giá, Phú Quốc, Cần Thơ...)
     status candidate_status NOT NULL DEFAULT 'new', -- Trạng thái
     applied_date DATE NOT NULL DEFAULT CURRENT_DATE, -- Ngày nộp hồ sơ
     qr_code VARCHAR(500),                          -- Mã QR để tra cứu

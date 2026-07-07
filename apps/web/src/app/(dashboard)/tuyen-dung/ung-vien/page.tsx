@@ -72,7 +72,7 @@ export default function UngVienPage() {
     setError("")
     try {
       const token = localStorage.getItem("namthang_hrm_token")
-      const res = await fetch("http://localhost:4000/api/v1/candidates", {
+      const res = await fetch("/api-proxy/api/v1/candidates", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",

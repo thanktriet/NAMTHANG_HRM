@@ -6,12 +6,14 @@ interface Contract {
   code: string;
   employee_id: string;
   employee_name: string;
+  employee_code?: string;
   contract_type: "probation" | "fixed_term" | "indefinite";
   start_date: string;
-  end_date: string;
-  salary: number;
+  end_date: string | null;
+  base_salary: number | string;
   status: string;
-  file_url?: string;
+  file_path?: string | null;
+  file_name?: string | null;
   created_at?: string;
   note?: string;
 }
@@ -19,13 +21,14 @@ interface Contract {
 interface Employee {
   id: string;
   full_name: string;
-  employee_code: string;
+  code?: string;
+  employee_code?: string;
 }
 
 interface ContractStats {
   total: number;
   active: number;
-  expiring_soon: number;
+  expiring: number;
   expired: number;
 }
 
@@ -37,35 +40,41 @@ const CONTRACT_TYPE_LABELS: Record<string, string> = {
 
 const STATUS_LABELS: Record<string, string> = {
   active: "Hiệu lực",
+  expiring: "Sắp hết hạn",
   expiring_soon: "Sắp hết hạn",
   expired: "Hết hạn",
   terminated: "Đã thanh lý",
 };
 
-function formatDate(dateStr: string): string {
-  if (!dateStr) return "";
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "—";
   const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
   const day = String(d.getDate()).padStart(2, "0");
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const year = d.getFullYear();
   return `${day}/${month}/${year}`;
 }
 
-function formatCurrency(amount: number): string {
-  return amount.toLocaleString("vi-VN") + " ₫";
+function formatCurrency(amount: number | string | null | undefined): string {
+  const n = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (n == null || isNaN(n)) return "—";
+  return n.toLocaleString("vi-VN") + " ₫";
 }
 
-function daysUntil(dateStr: string): number {
+function daysUntil(dateStr: string | null | undefined): number {
+  if (!dateStr) return Infinity;
   const now = new Date();
   now.setHours(0, 0, 0, 0);
   const target = new Date(dateStr);
+  if (isNaN(target.getTime())) return Infinity;
   target.setHours(0, 0, 0, 0);
   return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 export default function HopDongPage() {
   const [contracts, setContracts] = useState<Contract[]>([]);
-  const [stats, setStats] = useState<ContractStats>({ total: 0, active: 0, expiring_soon: 0, expired: 0 });
+  const [stats, setStats] = useState<ContractStats>({ total: 0, active: 0, expiring: 0, expired: 0 });
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -85,7 +94,7 @@ export default function HopDongPage() {
   });
   const [renewForm, setRenewForm] = useState({ new_end_date: "", new_salary: "" });
 
-  const API_BASE = "http://localhost:4000/api/v1";
+  const API_BASE = "/api-proxy/api/v1";
 
   function getToken(): string {
     return localStorage.getItem("namthang_hrm_token") || "";
@@ -222,6 +231,7 @@ export default function HopDongPage() {
     switch (status) {
       case "active":
         return { ...base, backgroundColor: "#d4edda", color: "#155724" };
+      case "expiring":
       case "expiring_soon":
         return { ...base, backgroundColor: "#fff3cd", color: "#856404" };
       case "expired":
@@ -257,7 +267,7 @@ export default function HopDongPage() {
         </div>
         <div style={{ background: "#fff", borderRadius: "8px", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
           <div style={{ fontSize: "14px", color: "#666", marginBottom: "4px" }}>Sắp hết hạn</div>
-          <div style={{ fontSize: "28px", fontWeight: 700, color: "#856404" }}>{stats.expiring_soon}</div>
+          <div style={{ fontSize: "28px", fontWeight: 700, color: "#856404" }}>{stats.expiring}</div>
         </div>
         <div style={{ background: "#fff", borderRadius: "8px", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
           <div style={{ fontSize: "14px", color: "#666", marginBottom: "4px" }}>Hết hạn</div>
@@ -334,14 +344,14 @@ export default function HopDongPage() {
                   <td style={{ padding: "10px 14px" }}>{CONTRACT_TYPE_LABELS[contract.contract_type] || contract.contract_type}</td>
                   <td style={{ padding: "10px 14px" }}>{formatDate(contract.start_date)}</td>
                   <td style={{ padding: "10px 14px" }}>{formatDate(contract.end_date)}</td>
-                  <td style={{ padding: "10px 14px", textAlign: "right" }}>{formatCurrency(contract.salary)}</td>
+                  <td style={{ padding: "10px 14px", textAlign: "right" }}>{formatCurrency(contract.base_salary)}</td>
                   <td style={{ padding: "10px 14px", textAlign: "center" }}>
                     <span style={getStatusBadgeStyle(contract.status)}>
                       {STATUS_LABELS[contract.status] || contract.status}
                     </span>
                   </td>
                   <td style={{ padding: "10px 14px", textAlign: "center" }}>
-                    {contract.file_url ? <span title="Có file đính kèm">📎</span> : "—"}
+                    {contract.file_path ? <span title="Có file đính kèm">📎</span> : "—"}
                   </td>
                   <td style={{ padding: "10px 14px", textAlign: "center" }}>
                     <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
@@ -406,7 +416,7 @@ export default function HopDongPage() {
                 >
                   <option value="">-- Chọn nhân viên --</option>
                   {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>{emp.full_name} ({emp.employee_code})</option>
+                    <option key={emp.id} value={emp.id}>{emp.full_name} ({emp.code || emp.employee_code})</option>
                   ))}
                 </select>
               </div>
@@ -550,7 +560,7 @@ export default function HopDongPage() {
               <span style={{ color: "#666" }}>Ngày kết thúc:</span>
               <span>{formatDate(selectedContract.end_date)}</span>
               <span style={{ color: "#666" }}>Lương:</span>
-              <span style={{ fontWeight: 500 }}>{formatCurrency(selectedContract.salary)}</span>
+              <span style={{ fontWeight: 500 }}>{formatCurrency(selectedContract.base_salary)}</span>
               <span style={{ color: "#666" }}>Trạng thái:</span>
               <span style={getStatusBadgeStyle(selectedContract.status)}>
                 {STATUS_LABELS[selectedContract.status] || selectedContract.status}
@@ -594,11 +604,11 @@ export default function HopDongPage() {
           </div>
 
           {/* File Attachment */}
-          {selectedContract.file_url && (
+          {selectedContract.file_path && (
             <div style={{ marginBottom: "20px" }}>
               <h3 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "12px", color: "#374151" }}>File đính kèm</h3>
               <a
-                href={selectedContract.file_url}
+                href={selectedContract.file_path}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 16px", backgroundColor: "#eff6ff", borderRadius: "6px", color: "#2563eb", textDecoration: "none", fontSize: "14px" }}

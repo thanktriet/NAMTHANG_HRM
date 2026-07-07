@@ -15,11 +15,13 @@ interface PayrollRecord {
 }
 
 interface PayrollStats {
-  totalFund: number;
-  totalBaseSalary: number;
-  totalAllowance: number;
-  totalDeduction: number;
-  employeeCount: number;
+  // Backend (payroll.service.ts getStats) returns: total_employees, total_salary_fund
+  total_salary_fund?: number | string | null;
+  total_employees?: number | string | null;
+  // Not currently returned by backend (kept optional so the cards degrade to "—")
+  totalBaseSalary?: number | string | null;
+  totalAllowance?: number | string | null;
+  totalDeduction?: number | string | null;
 }
 
 function getToken(): string | null {
@@ -27,9 +29,10 @@ function getToken(): string | null {
   return localStorage.getItem("namthang_hrm_token");
 }
 
-function formatCurrency(amount: number): string {
-  if (!amount && amount !== 0) return "—";
-  return amount.toLocaleString("vi-VN") + " ₫";
+function formatCurrency(amount: number | string | null | undefined): string {
+  const n = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (n == null || isNaN(n)) return "—";
+  return n.toLocaleString("vi-VN") + " ₫";
 }
 
 export default function TienLuongPage() {
@@ -52,8 +55,8 @@ export default function TienLuongPage() {
         const headers = { Authorization: `Bearer ${token}` };
 
         const [payrollRes, statsRes] = await Promise.all([
-          fetch("http://localhost:4000/api/v1/payroll", { headers }),
-          fetch("http://localhost:4000/api/v1/payroll/stats", { headers }),
+          fetch("/api-proxy/api/v1/payroll", { headers }),
+          fetch("/api-proxy/api/v1/payroll/stats", { headers }),
         ]);
 
         if (!payrollRes.ok) {
@@ -128,10 +131,10 @@ export default function TienLuongPage() {
   }
 
   const statCards = [
-    { label: "Tổng quỹ lương", value: formatCurrency(stats?.totalFund ?? 0), color: "#2563eb", bg: "#eff6ff", icon: "💰" },
-    { label: "Lương cơ bản", value: formatCurrency(stats?.totalBaseSalary ?? 0), color: "#16a34a", bg: "#f0fdf4", icon: "📋" },
-    { label: "Phụ cấp", value: formatCurrency(stats?.totalAllowance ?? 0), color: "#9333ea", bg: "#faf5ff", icon: "➕" },
-    { label: "Khấu trừ", value: formatCurrency(stats?.totalDeduction ?? 0), color: "#dc2626", bg: "#fef2f2", icon: "➖" },
+    { label: "Tổng quỹ lương", value: formatCurrency(stats?.total_salary_fund), color: "#2563eb", bg: "#eff6ff", icon: "💰" },
+    { label: "Lương cơ bản", value: formatCurrency(stats?.totalBaseSalary), color: "#16a34a", bg: "#f0fdf4", icon: "📋" },
+    { label: "Phụ cấp", value: formatCurrency(stats?.totalAllowance), color: "#9333ea", bg: "#faf5ff", icon: "➕" },
+    { label: "Khấu trừ", value: formatCurrency(stats?.totalDeduction), color: "#dc2626", bg: "#fef2f2", icon: "➖" },
   ];
 
   return (
