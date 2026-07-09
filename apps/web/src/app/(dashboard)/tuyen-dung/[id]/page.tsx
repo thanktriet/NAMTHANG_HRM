@@ -239,6 +239,16 @@ export default function CandidateDetailPage() {
     return `${dd}/${mm}/${d.getUTCFullYear()}`
   }
 
+  // Tách "Tài xế xe 7 chỗ - VF5" -> vị trí + loại xe
+  const splitPosition = (raw: string | null | undefined) => {
+    const s = (raw || "").trim()
+    if (!s) return { position: "—", vehicle: "—" }
+    const idx = s.lastIndexOf(" - ")
+    if (idx === -1) return { position: s, vehicle: "—" }
+    return { position: s.slice(0, idx).trim() || "—", vehicle: s.slice(idx + 3).trim() || "—" }
+  }
+  const pos = splitPosition(candidate.position_applied)
+
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 24px" }}>
       {/* Back button */}
@@ -293,7 +303,8 @@ export default function CandidateDetailPage() {
           <div style={cardStyle}>
             <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: "#111827" }}>Thông tin nghề nghiệp</h2>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 24px" }}>
-              <div><p style={labelStyle}>Vị trí ứng tuyển</p><p style={valueStyle}>{candidate.position_applied || "—"}</p></div>
+              <div><p style={labelStyle}>Vị trí ứng tuyển</p><p style={valueStyle}>{pos.position}</p></div>
+              <div><p style={labelStyle}>Loại xe</p><p style={valueStyle}>{pos.vehicle}</p></div>
               <div><p style={labelStyle}>Số năm kinh nghiệm</p><p style={valueStyle}>{candidate.experience_years != null ? `${candidate.experience_years} năm` : "—"}</p></div>
               <div><p style={labelStyle}>Hạng bằng lái</p><p style={valueStyle}>{candidate.license_class || "—"}</p></div>
               <div><p style={labelStyle}>Khu vực làm việc</p><p style={valueStyle}>{candidate.work_area || "—"}</p></div>

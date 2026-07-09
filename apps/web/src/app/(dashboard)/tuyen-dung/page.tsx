@@ -72,6 +72,15 @@ function formatDate(dateStr: string | null | undefined): string {
   return `${day}/${month}/${year}`
 }
 
+// Tách "Tài xế xe 7 chỗ - VF5" -> { position: "Tài xế xe 7 chỗ", vehicle: "VF5" }
+function splitPosition(raw: string | null | undefined): { position: string; vehicle: string } {
+  const s = (raw || "").trim()
+  if (!s) return { position: "—", vehicle: "—" }
+  const idx = s.lastIndexOf(" - ")
+  if (idx === -1) return { position: s, vehicle: "—" }
+  return { position: s.slice(0, idx).trim() || "—", vehicle: s.slice(idx + 3).trim() || "—" }
+}
+
 function formatSalary(salary: string | null | undefined): string {
   if (salary === null || salary === undefined || salary === "") return "—"
   const num = parseFloat(salary)
@@ -498,6 +507,7 @@ export default function RecruitmentPage() {
                 <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600 }}>Mã UV</th>
                 <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600 }}>Họ tên</th>
                 <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600 }}>Vị trí</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600 }}>Loại xe</th>
                 <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600 }}>SĐT</th>
                 <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600 }}>
                   Ngày nộp
@@ -537,7 +547,8 @@ export default function RecruitmentPage() {
                   >
                     <td style={{ padding: "12px 16px", fontWeight: 500 }}>{c.code}</td>
                     <td style={{ padding: "12px 16px" }}>{c.full_name}</td>
-                    <td style={{ padding: "12px 16px" }}>{c.position_applied}</td>
+                    <td style={{ padding: "12px 16px" }}>{splitPosition(c.position_applied).position}</td>
+                    <td style={{ padding: "12px 16px" }}>{splitPosition(c.position_applied).vehicle}</td>
                     <td style={{ padding: "12px 16px" }}>{c.phone}</td>
                     <td style={{ padding: "12px 16px" }}>{formatDate(c.applied_date)}</td>
                     <td style={{ padding: "12px 16px" }}>

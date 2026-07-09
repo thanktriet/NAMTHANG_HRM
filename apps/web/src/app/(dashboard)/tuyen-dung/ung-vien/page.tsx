@@ -54,6 +54,15 @@ function formatDate(dateStr: string): string {
   return `${day}/${month}/${year}`
 }
 
+// Tách "Tài xế xe 7 chỗ - VF5" -> { position: "Tài xế xe 7 chỗ", vehicle: "VF5" }
+function splitPosition(raw: string | null | undefined): { position: string; vehicle: string } {
+  const s = (raw || "").trim()
+  if (!s) return { position: "—", vehicle: "—" }
+  const idx = s.lastIndexOf(" - ")
+  if (idx === -1) return { position: s, vehicle: "—" }
+  return { position: s.slice(0, idx).trim() || "—", vehicle: s.slice(idx + 3).trim() || "—" }
+}
+
 export default function UngVienPage() {
   const router = useRouter()
   const [candidates, setCandidates] = useState<Candidate[]>([])
@@ -237,6 +246,9 @@ export default function UngVienPage() {
                   Vị trí
                 </th>
                 <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, color: "#374151", borderBottom: "1px solid #e5e7eb" }}>
+                  Loại xe
+                </th>
+                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, color: "#374151", borderBottom: "1px solid #e5e7eb" }}>
                   SĐT
                 </th>
                 <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, color: "#374151", borderBottom: "1px solid #e5e7eb" }}>
@@ -266,7 +278,8 @@ export default function UngVienPage() {
                   >
                     <td style={{ padding: "12px 16px", color: "#6b7280" }}>{c.code}</td>
                     <td style={{ padding: "12px 16px", color: "#2563eb", fontWeight: 500 }}>{c.full_name}</td>
-                    <td style={{ padding: "12px 16px", color: "#374151" }}>{c.position_applied}</td>
+                    <td style={{ padding: "12px 16px", color: "#374151" }}>{splitPosition(c.position_applied).position}</td>
+                    <td style={{ padding: "12px 16px", color: "#374151" }}>{splitPosition(c.position_applied).vehicle}</td>
                     <td style={{ padding: "12px 16px", color: "#374151" }}>{c.phone}</td>
                     <td style={{ padding: "12px 16px", color: "#374151" }}>{c.email}</td>
                     <td style={{ padding: "12px 16px", color: "#374151" }}>{formatDate(c.applied_date)}</td>
