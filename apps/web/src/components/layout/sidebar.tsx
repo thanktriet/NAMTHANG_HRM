@@ -52,8 +52,8 @@ const navItems: NavItem[] = [
       { title: "Thêm nhân viên", href: "/nhan-su/them-moi" },
     ],
   },
-  // { title: "Chấm công", href: "/cham-cong", icon: Clock },
-  // { title: "Tiền lương", href: "/tien-luong", icon: Wallet },
+  { title: "Chấm công", href: "/cham-cong", icon: Clock },
+  { title: "Tiền lương", href: "/tien-luong", icon: Wallet },
   { title: "Hợp đồng", href: "/hop-dong", icon: FileText },
   {
     title: "Tài xế",

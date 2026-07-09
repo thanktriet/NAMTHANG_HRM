@@ -59,7 +59,7 @@ export class AttendanceService {
         COUNT(*) as total_records,
         COUNT(*) FILTER (WHERE status = 'late') as late_count,
         COUNT(*) FILTER (WHERE status = 'early_leave') as early_leave_count,
-        COALESCE(SUM(overtime_hours), 0) as total_ot_hours
+        COALESCE(SUM(ot_hours), 0) as total_ot_hours
       FROM attendance_records
       WHERE deleted_at IS NULL
         AND EXTRACT(MONTH FROM date) = EXTRACT(MONTH FROM CURRENT_DATE)
