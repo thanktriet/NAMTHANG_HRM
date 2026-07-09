@@ -97,7 +97,7 @@ export default function UngTuyenPage() {
       }
     }
     if (step === 1) {
-      const required = ["viTri", "hangGPLX", "kinhNghiem"];
+      const required = ["viTri", "loaiXe", "hangGPLX", "kinhNghiem"];
       const missing = required.filter((f) => !formData[f]?.trim());
       if (missing.length > 0) {
         alert("Vui lòng điền đầy đủ các trường bắt buộc (*)");
@@ -170,7 +170,7 @@ export default function UngTuyenPage() {
         current_address: formData.diaChiHT || "",
         email: formData.email || "",
         phone: formData.sdt || "",
-        position_applied: formData.viTri || "",
+        position_applied: [formData.viTri, formData.loaiXe].filter(Boolean).join(" - "),
         license_class: (formData.hangGPLX || "").split(" - ")[0] || "",
         experience_years: experienceYears,
         last_company: formData.congTy || "",
@@ -381,14 +381,25 @@ function Step2({ data, onChange }: { data: Record<string, string>; onChange: (n:
       <div className="form-title">
         <Briefcase size={18} /> Thông tin nghề nghiệp
       </div>
-      <div className="field-group">
-        <label>Vị trí ứng tuyển <span className="req">*</span></label>
-        <select value={data.viTri || ""} onChange={(e) => onChange("viTri", e.target.value)}>
-          <option value="">-- Chọn vị trí --</option>
-          <option>Tài xế xe 5 chỗ</option>
-          <option>Tài xế xe 7 chỗ</option>
-          <option>Tài xế xe bus</option>
-        </select>
+      <div className="field-row">
+        <div className="field-group">
+          <label>Vị trí ứng tuyển <span className="req">*</span></label>
+          <select value={data.viTri || ""} onChange={(e) => onChange("viTri", e.target.value)}>
+            <option value="">-- Chọn vị trí --</option>
+            <option>Tài xế xe 5 chỗ</option>
+            <option>Tài xế xe 7 chỗ</option>
+            <option>Tài xế xe bus</option>
+          </select>
+        </div>
+        <div className="field-group">
+          <label>Loại xe <span className="req">*</span></label>
+          <select value={data.loaiXe || ""} onChange={(e) => onChange("loaiXe", e.target.value)}>
+            <option value="">-- Chọn loại xe --</option>
+            <option>Xe số sàn</option>
+            <option>Xe số tự động</option>
+            <option>Cả hai</option>
+          </select>
+        </div>
       </div>
       <div className="field-group">
         <label>Hạng GPLX hiện có <span className="req">*</span></label>
