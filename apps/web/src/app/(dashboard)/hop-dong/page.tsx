@@ -36,6 +36,7 @@ const CONTRACT_TYPE_LABELS: Record<string, string> = {
   probation: "Thử việc",
   fixed_term: "Xác định thời hạn",
   indefinite: "Không xác định thời hạn",
+  service: "Hợp đồng dịch vụ",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -293,6 +294,7 @@ export default function HopDongPage() {
           <option value="probation">Thử việc</option>
           <option value="fixed_term">Xác định thời hạn</option>
           <option value="indefinite">Không xác định thời hạn</option>
+          <option value="service">Hợp đồng dịch vụ</option>
         </select>
         <select
           value={filterStatus}
@@ -430,6 +432,7 @@ export default function HopDongPage() {
                   <option value="probation">Thử việc</option>
                   <option value="fixed_term">Xác định thời hạn</option>
                   <option value="indefinite">Không xác định thời hạn</option>
+          <option value="service">Hợp đồng dịch vụ</option>
                 </select>
               </div>
               <div>

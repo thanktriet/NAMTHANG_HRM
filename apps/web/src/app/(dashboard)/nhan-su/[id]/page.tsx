@@ -400,7 +400,7 @@ export default function EmployeeDetailPage() {
               <div key={i} style={{ padding: 14, borderRadius: 8, border: "1px solid #e5e7eb" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>
-                    {c.contract_type === "probation" ? "Thử việc" : c.contract_type === "fixed_term" ? "Có thời hạn" : c.contract_type === "indefinite" ? "Không thời hạn" : c.contract_type}
+                    {c.contract_type === "probation" ? "Thử việc" : c.contract_type === "fixed_term" ? "Có thời hạn" : c.contract_type === "indefinite" ? "Không thời hạn" : c.contract_type === "service" ? "Dịch vụ" : c.contract_type}
                   </span>
                   <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, background: c.status === "active" ? "#dcfce7" : "#fee2e2", color: c.status === "active" ? "#16a34a" : "#dc2626" }}>
                     {c.status === "active" ? "Hiệu lực" : c.status}

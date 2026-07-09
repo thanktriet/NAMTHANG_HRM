@@ -44,7 +44,7 @@ CREATE TYPE education_level_type AS ENUM ('primary', 'secondary', 'high_school',
 CREATE TYPE reward_discipline_type AS ENUM ('reward', 'discipline');
 
 -- Loại hợp đồng
-CREATE TYPE contract_type AS ENUM ('probation', 'fixed_term', 'indefinite');
+CREATE TYPE contract_type AS ENUM ('probation', 'fixed_term', 'indefinite', 'service');
 
 -- Trạng thái hợp đồng
 CREATE TYPE contract_status AS ENUM ('active', 'expired', 'terminated');
