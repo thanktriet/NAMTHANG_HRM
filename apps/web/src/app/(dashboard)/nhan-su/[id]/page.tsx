@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 
 const API_BASE = "/api-proxy/api/v1";
+// Base URL để mở file đã upload (file_path dạng /uploads/... phục vụ qua nginx domain tuyển dụng)
+const DOC_BASE = "https://tuyendung.vinfastnamthang.vn";
 
 const REQUIRED_DOCS = [
   { key: "cccd", label: "CCCD" },
@@ -163,15 +165,18 @@ export default function EmployeeDetailPage() {
   const handleUpload = async (documentType: string, file: File) => {
     setUploading(documentType);
     try {
-      const filePath = `/uploads/documents/${employeeId}/${documentType}/${file.name}`;
+      const token = localStorage.getItem("namthang_hrm_token");
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("document_type", documentType);
       const res = await fetch(`${API_BASE}/employees/${employeeId}/documents`, {
         method: "POST",
-        headers: headers(),
-        body: JSON.stringify({ document_type: documentType, file_name: file.name, file_path: filePath }),
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
       });
       if (res.ok) {
         const r = await fetch(`${API_BASE}/employees/${employeeId}/documents`, { headers: headers() });
-        if (r.ok) { const d = await r.json(); setDocuments(d.items || []); }
+        if (r.ok) { const d = await r.json(); setDocuments(d.data?.items || d.items || []); }
       } else { alert("Lỗi khi upload tài liệu"); }
     } catch { alert("Lỗi khi upload tài liệu"); }
     finally { setUploading(null); }
@@ -499,6 +504,16 @@ export default function EmployeeDetailPage() {
                     )}
                   </div>
                 </div>
+                {uploaded && (
+                  <a
+                    href={uploaded.file_path?.startsWith("http") ? uploaded.file_path : `${DOC_BASE}${uploaded.file_path}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ padding: "6px 14px", fontSize: 13, fontWeight: 500, borderRadius: 6, border: "1px solid #2563eb", background: "#fff", color: "#2563eb", textDecoration: "none" }}
+                  >
+                    Xem
+                  </a>
+                )}
                 {!uploaded && (
                   <div>
                     <input type="file" ref={(el) => { fileInputRefs.current[doc.key] = el; }} style={{ display: "none" }} onChange={(e) => { const file = e.target.files?.[0]; if (file) handleUpload(doc.key, file); }} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />

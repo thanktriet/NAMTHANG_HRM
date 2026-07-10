@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Patch, Query, Param, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Query,
+  Param,
+  Body,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { EmployeesService } from './employees.service';
 
 @Controller('employees')
@@ -55,10 +66,15 @@ export class EmployeesController {
   }
 
   @Post(':id/documents')
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 50 * 1024 * 1024 } }),
+  )
   async uploadDocument(
     @Param('id') id: string,
-    @Body() body: { document_type: string; file_name: string; file_path: string },
+    @Body() body: { document_type: string },
+    @UploadedFile()
+    file: { originalname: string; buffer: Buffer; size: number; mimetype: string },
   ) {
-    return this.employeesService.uploadDocument(id, body);
+    return this.employeesService.uploadDocument(id, body.document_type, file);
   }
 }

@@ -1,5 +1,17 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Pool } from 'pg';
+import { promises as fs } from 'fs';
+import * as path from 'path';
+
+type UploadedFile = {
+  originalname: string;
+  buffer: Buffer;
+  size: number;
+  mimetype: string;
+};
+
+const UPLOAD_ROOT =
+  process.env.UPLOAD_DIR || '/www/wwwroot/hrm.namthang/uploads';
 
 @Injectable()
 export class EmployeesService {
@@ -83,7 +95,8 @@ export class EmployeesService {
 
   async uploadDocument(
     employeeId: string,
-    body: { document_type: string; file_name: string; file_path: string },
+    documentType: string,
+    file: UploadedFile,
   ) {
     // Check employee exists
     const emp = await this.pool.query(
@@ -93,12 +106,25 @@ export class EmployeesService {
     if (emp.rows.length === 0) {
       throw new NotFoundException('Nhân viên không tồn tại');
     }
+    if (!file) {
+      throw new BadRequestException('Không có file nào được tải lên');
+    }
+
+    // Ghi file thật vào ổ đĩa: uploads/employees/<id>/<type>-<timestamp><ext>
+    const destDir = path.join(UPLOAD_ROOT, 'employees', employeeId);
+    await fs.mkdir(destDir, { recursive: true });
+    const ext = path.extname(file.originalname) || '';
+    const safeName = `${documentType}-${Date.now()}${ext}`;
+    await fs.writeFile(path.join(destDir, safeName), file.buffer);
+
+    // Đường dẫn tương đối serve qua nginx
+    const relPath = `/uploads/employees/${employeeId}/${safeName}`;
 
     const result = await this.pool.query(
       `INSERT INTO employee_documents (employee_id, document_type, file_name, file_path, uploaded_at)
        VALUES ($1, $2, $3, $4, NOW())
        RETURNING *`,
-      [employeeId, body.document_type, body.file_name, body.file_path],
+      [employeeId, documentType, file.originalname, relPath],
     );
     return result.rows[0];
   }
