@@ -97,7 +97,7 @@ export default function UngTuyenPage() {
       }
     }
     if (step === 1) {
-      const required = ["viTri", "loaiXe", "hangGPLX", "kinhNghiem"];
+      const required = ["viTri", "loaiXe", "hangGPLX", "kinhNghiem", "khuVuc"];
       const missing = required.filter((f) => !formData[f]?.trim());
       if (missing.length > 0) {
         alert("Vui lòng điền đầy đủ các trường bắt buộc (*)");
@@ -439,7 +439,7 @@ function Step2({ data, onChange }: { data: Record<string, string>; onChange: (n:
         </div>
       </div>
       <div className="field-group">
-        <label>Khu vực làm việc mong muốn</label>
+        <label>Khu vực làm việc mong muốn <span className="req">*</span></label>
         <select value={data.khuVuc || ""} onChange={(e) => onChange("khuVuc", e.target.value)}>
           <option value="">-- Chọn khu vực --</option>
           <option>Rạch Giá</option>
