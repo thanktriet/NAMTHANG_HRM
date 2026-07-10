@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Query,
   Param,
   Body,
@@ -76,5 +77,13 @@ export class EmployeesController {
     file: { originalname: string; buffer: Buffer; size: number; mimetype: string },
   ) {
     return this.employeesService.uploadDocument(id, body.document_type, file);
+  }
+
+  @Delete(':id/documents/:docId')
+  async deleteDocument(
+    @Param('id') id: string,
+    @Param('docId') docId: string,
+  ) {
+    return this.employeesService.deleteDocument(id, docId);
   }
 }

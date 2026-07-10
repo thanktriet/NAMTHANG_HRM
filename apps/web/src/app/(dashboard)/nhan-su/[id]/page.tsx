@@ -182,6 +182,20 @@ export default function EmployeeDetailPage() {
     finally { setUploading(null); }
   };
 
+  const handleDeleteDoc = async (docId: string) => {
+    if (!window.confirm("Xóa tài liệu này? (vẫn lưu lịch sử, có thể tải lại file mới)")) return;
+    try {
+      const res = await fetch(`${API_BASE}/employees/${employeeId}/documents/${docId}`, {
+        method: "DELETE",
+        headers: headers(),
+      });
+      if (res.ok) {
+        const r = await fetch(`${API_BASE}/employees/${employeeId}/documents`, { headers: headers() });
+        if (r.ok) { const d = await r.json(); setDocuments(d.data?.items || d.items || []); }
+      } else { alert("Lỗi khi xóa tài liệu"); }
+    } catch { alert("Lỗi khi xóa tài liệu"); }
+  };
+
   if (loading) {
     return <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Đang tải...</div>;
   }
@@ -505,14 +519,22 @@ export default function EmployeeDetailPage() {
                   </div>
                 </div>
                 {uploaded && (
-                  <a
-                    href={uploaded.file_path?.startsWith("http") ? uploaded.file_path : `${DOC_BASE}${uploaded.file_path}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ padding: "6px 14px", fontSize: 13, fontWeight: 500, borderRadius: 6, border: "1px solid #2563eb", background: "#fff", color: "#2563eb", textDecoration: "none" }}
-                  >
-                    Xem
-                  </a>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <a
+                      href={uploaded.file_path?.startsWith("http") ? uploaded.file_path : `${DOC_BASE}${uploaded.file_path}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ padding: "6px 14px", fontSize: 13, fontWeight: 500, borderRadius: 6, border: "1px solid #2563eb", background: "#fff", color: "#2563eb", textDecoration: "none" }}
+                    >
+                      Xem
+                    </a>
+                    <button
+                      onClick={() => handleDeleteDoc(uploaded.id)}
+                      style={{ padding: "6px 14px", fontSize: 13, fontWeight: 500, borderRadius: 6, border: "1px solid #dc2626", background: "#fff", color: "#dc2626", cursor: "pointer" }}
+                    >
+                      Xóa
+                    </button>
+                  </div>
                 )}
                 {!uploaded && (
                   <div>

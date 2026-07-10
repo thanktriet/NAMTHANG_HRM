@@ -87,10 +87,24 @@ export class EmployeesService {
 
   async getDocuments(employeeId: string) {
     const result = await this.pool.query(
-      'SELECT * FROM employee_documents WHERE employee_id = $1 ORDER BY uploaded_at DESC',
+      'SELECT * FROM employee_documents WHERE employee_id = $1 AND deleted_at IS NULL ORDER BY uploaded_at DESC',
       [employeeId],
     );
     return { items: result.rows, total: result.rows.length };
+  }
+
+  // Xóa mềm 1 tài liệu (giữ lịch sử: chỉ set deleted_at, không xóa file/bản ghi)
+  async deleteDocument(employeeId: string, docId: string) {
+    const result = await this.pool.query(
+      `UPDATE employee_documents SET deleted_at = NOW()
+       WHERE id = $1 AND employee_id = $2 AND deleted_at IS NULL
+       RETURNING id`,
+      [docId, employeeId],
+    );
+    if (result.rows.length === 0) {
+      throw new NotFoundException('Tài liệu không tồn tại hoặc đã bị xóa');
+    }
+    return { message: 'Đã xóa tài liệu', id: docId };
   }
 
   async uploadDocument(
