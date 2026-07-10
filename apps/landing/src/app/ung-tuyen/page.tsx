@@ -23,6 +23,13 @@ import {
 
 const STEPS = ["Cá nhân", "Nghề nghiệp", "Giấy tờ", "Hình ảnh", "Cam kết"];
 
+// Loại xe khả dụng theo vị trí ứng tuyển
+const VEHICLE_BY_POSITION: Record<string, string[]> = {
+  "Tài xế xe 5 chỗ": ["VF5", "VF6"],
+  "Tài xế xe 7 chỗ": ["Limo Green"],
+  "Tài xế xe bus": ["Xe bus"],
+};
+
 // API qua nginx proxy (/api-proxy/ -> gateway). Chạy được cả trên production lẫn khi truy cập qua domain.
 const API_BASE = "/api-proxy/api/v1";
 
@@ -384,7 +391,14 @@ function Step2({ data, onChange }: { data: Record<string, string>; onChange: (n:
       <div className="field-row">
         <div className="field-group">
           <label>Vị trí ứng tuyển <span className="req">*</span></label>
-          <select value={data.viTri || ""} onChange={(e) => onChange("viTri", e.target.value)}>
+          <select
+            value={data.viTri || ""}
+            onChange={(e) => {
+              onChange("viTri", e.target.value);
+              // Đổi vị trí thì reset loại xe (danh sách loại xe phụ thuộc vị trí)
+              onChange("loaiXe", "");
+            }}
+          >
             <option value="">-- Chọn vị trí --</option>
             <option>Tài xế xe 5 chỗ</option>
             <option>Tài xế xe 7 chỗ</option>
@@ -393,11 +407,15 @@ function Step2({ data, onChange }: { data: Record<string, string>; onChange: (n:
         </div>
         <div className="field-group">
           <label>Loại xe <span className="req">*</span></label>
-          <select value={data.loaiXe || ""} onChange={(e) => onChange("loaiXe", e.target.value)}>
-            <option value="">-- Chọn loại xe --</option>
-            <option>VF5</option>
-            <option>VF6</option>
-            <option>Limo Green</option>
+          <select
+            value={data.loaiXe || ""}
+            onChange={(e) => onChange("loaiXe", e.target.value)}
+            disabled={!data.viTri}
+          >
+            <option value="">{data.viTri ? "-- Chọn loại xe --" : "-- Chọn vị trí trước --"}</option>
+            {(VEHICLE_BY_POSITION[data.viTri || ""] || []).map((v) => (
+              <option key={v}>{v}</option>
+            ))}
           </select>
         </div>
       </div>
