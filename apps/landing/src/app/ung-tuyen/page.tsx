@@ -395,12 +395,8 @@ function Step2({ data, onChange }: { data: Record<string, string>; onChange: (n:
           <label>Loại xe <span className="req">*</span></label>
           <select value={data.loaiXe || ""} onChange={(e) => onChange("loaiXe", e.target.value)}>
             <option value="">-- Chọn loại xe --</option>
-            <option>VF3</option>
             <option>VF5</option>
             <option>VF6</option>
-            <option>VF7</option>
-            <option>VF8</option>
-            <option>VF9</option>
             <option>Limo Green</option>
           </select>
         </div>
