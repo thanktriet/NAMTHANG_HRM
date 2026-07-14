@@ -501,47 +501,62 @@ export default function EmployeeDetailPage() {
     return (
       <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", padding: 24 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginTop: 0, marginBottom: 20 }}>Hồ sơ nhân viên</h2>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {REQUIRED_DOCS.map((doc) => {
-            const uploaded = documents.find((d) => d.document_type === doc.key);
+            const uploaded = documents.filter((d) => d.document_type === doc.key);
+            const hasFiles = uploaded.length > 0;
             const isUploading = uploading === doc.key;
+            const canUploadMore = uploaded.length < 5;
             return (
-              <div key={doc.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderRadius: 8, border: uploaded ? "1px solid #bbf7d0" : "1px solid #fecaca", background: uploaded ? "#f0fdf4" : "#fef2f2" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 20 }}>{uploaded ? "✅" : "❌"}</span>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>{doc.label}</div>
-                    {uploaded ? (
-                      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{uploaded.file_name} — {formatDate(uploaded.uploaded_at)}</div>
-                    ) : (
-                      <div style={{ fontSize: 12, color: "#dc2626", marginTop: 2 }}>Chưa upload</div>
-                    )}
+              <div key={doc.key} style={{ borderRadius: 8, border: hasFiles ? "1px solid #bbf7d0" : "1px solid #fecaca", background: hasFiles ? "#f0fdf4" : "#fef2f2", overflow: "hidden" }}>
+                {/* Header row */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ fontSize: 20 }}>{hasFiles ? "✅" : "❌"}</span>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>
+                        {doc.label}
+                        {hasFiles && <span style={{ marginLeft: 8, fontSize: 12, color: "#6b7280", fontWeight: 400 }}>({uploaded.length} file)</span>}
+                      </div>
+                      {!hasFiles && <div style={{ fontSize: 12, color: "#dc2626", marginTop: 2 }}>Chưa upload</div>}
+                    </div>
                   </div>
+                  {canUploadMore && (
+                    <div>
+                      <input type="file" ref={(el) => { fileInputRefs.current[doc.key] = el; }} style={{ display: "none" }} onChange={(e) => { const file = e.target.files?.[0]; if (file) handleUpload(doc.key, file); e.target.value = ""; }} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+                      <button onClick={() => fileInputRefs.current[doc.key]?.click()} disabled={isUploading} style={{ padding: "6px 14px", fontSize: 13, fontWeight: 500, borderRadius: 6, border: "1px solid #d1d5db", background: isUploading ? "#f3f4f6" : "#fff", color: isUploading ? "#9ca3af" : "#374151", cursor: isUploading ? "not-allowed" : "pointer" }}>
+                        {isUploading ? "Đang tải..." : hasFiles ? "+ Thêm file" : "Chọn file"}
+                      </button>
+                    </div>
+                  )}
                 </div>
-                {uploaded && (
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <a
-                      href={uploaded.file_path?.startsWith("http") ? uploaded.file_path : `${DOC_BASE}${uploaded.file_path}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ padding: "6px 14px", fontSize: 13, fontWeight: 500, borderRadius: 6, border: "1px solid #2563eb", background: "#fff", color: "#2563eb", textDecoration: "none" }}
-                    >
-                      Xem
-                    </a>
-                    <button
-                      onClick={() => handleDeleteDoc(uploaded.id)}
-                      style={{ padding: "6px 14px", fontSize: 13, fontWeight: 500, borderRadius: 6, border: "1px solid #dc2626", background: "#fff", color: "#dc2626", cursor: "pointer" }}
-                    >
-                      Xóa
-                    </button>
-                  </div>
-                )}
-                {!uploaded && (
-                  <div>
-                    <input type="file" ref={(el) => { fileInputRefs.current[doc.key] = el; }} style={{ display: "none" }} onChange={(e) => { const file = e.target.files?.[0]; if (file) handleUpload(doc.key, file); }} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
-                    <button onClick={() => fileInputRefs.current[doc.key]?.click()} disabled={isUploading} style={{ padding: "6px 14px", fontSize: 13, fontWeight: 500, borderRadius: 6, border: "1px solid #d1d5db", background: isUploading ? "#f3f4f6" : "#fff", color: isUploading ? "#9ca3af" : "#374151", cursor: isUploading ? "not-allowed" : "pointer" }}>
-                      {isUploading ? "Đang tải..." : "Chọn file"}
-                    </button>
+                {/* File list */}
+                {hasFiles && (
+                  <div style={{ borderTop: "1px solid #d1fae5", padding: "8px 18px 12px" }}>
+                    {uploaded.map((f, idx) => (
+                      <div key={f.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: idx < uploaded.length - 1 ? "1px solid #d1fae5" : "none" }}>
+                        <div style={{ fontSize: 13, color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 300 }}>
+                          📄 {f.file_name}
+                          <span style={{ color: "#9ca3af", marginLeft: 8, fontSize: 11 }}>{formatDate(f.uploaded_at)}</span>
+                        </div>
+                        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                          <a
+                            href={f.file_path?.startsWith("http") ? f.file_path : `${DOC_BASE}${f.file_path}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ padding: "4px 12px", fontSize: 12, fontWeight: 500, borderRadius: 6, border: "1px solid #2563eb", background: "#fff", color: "#2563eb", textDecoration: "none" }}
+                          >
+                            Xem
+                          </a>
+                          <button
+                            onClick={() => handleDeleteDoc(f.id)}
+                            style={{ padding: "4px 12px", fontSize: 12, fontWeight: 500, borderRadius: 6, border: "1px solid #dc2626", background: "#fff", color: "#dc2626", cursor: "pointer" }}
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
