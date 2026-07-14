@@ -27,6 +27,20 @@ function formatDate(dateStr: string) {
 
 const DATE_FIELDS = ["date_of_birth", "id_card_date", "hire_date"];
 
+const EMP_STATUS_LABEL: Record<string, string> = {
+  probation: "Thử việc",
+  active: "Đang làm việc",
+  resigned: "Đã nghỉ",
+  terminated: "Chấm dứt",
+};
+
+const CONTRACT_STATUS_LABEL: Record<string, string> = {
+  active: "Hiệu lực",
+  expired: "Hết hạn",
+  terminated: "Đã thanh lý",
+  draft: "Nháp",
+};
+
 const FIELD_MAP: Record<string, string> = {
   full_name: "Họ và tên",
   date_of_birth: "Ngày sinh",
@@ -235,7 +249,7 @@ export default function EmployeeDetailPage() {
         <div style={{ display: "flex", gap: 24, marginTop: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 13, color: "#6b7280" }}>Phòng ban: <b>{employee.department_name || "—"}</b></span>
           <span style={{ fontSize: 13, color: "#6b7280" }}>Chức vụ: <b>{employee.position_name || "—"}</b></span>
-          <span style={{ fontSize: 13, color: "#6b7280" }}>Trạng thái: <b>{employee.status || "—"}</b></span>
+          <span style={{ fontSize: 13, color: "#6b7280" }}>Trạng thái: <b>{EMP_STATUS_LABEL[employee.status] || employee.status || "—"}</b></span>
         </div>
       </div>
 
@@ -422,7 +436,7 @@ export default function EmployeeDetailPage() {
                     {c.contract_type === "probation" ? "Thử việc" : c.contract_type === "fixed_term" ? "Có thời hạn" : c.contract_type === "indefinite" ? "Không thời hạn" : c.contract_type === "service" ? "Dịch vụ" : c.contract_type}
                   </span>
                   <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, background: c.status === "active" ? "#dcfce7" : "#fee2e2", color: c.status === "active" ? "#16a34a" : "#dc2626" }}>
-                    {c.status === "active" ? "Hiệu lực" : c.status}
+                    {CONTRACT_STATUS_LABEL[c.status] || c.status}
                   </span>
                 </div>
                 <div style={{ fontSize: 13, color: "#6b7280", marginTop: 6 }}>
