@@ -367,7 +367,52 @@ export class CandidatesService {
       ],
     );
 
-    return { ...result.rows[0], already: false };
+    const employee = result.rows[0];
+
+    // Sao chép giấy tờ ứng viên sang hồ sơ nhân viên (giữ nguyên file, chỉ tạo bản ghi mới).
+    // Map document_type của candidate -> của employee.
+    try {
+      await this.copyDocumentsToEmployee(id, employee.id);
+    } catch (err) {
+      this.logger.error(
+        `Không sao chép được giấy tờ ứng viên ${id} sang nhân viên ${employee.id}: ${err}`,
+      );
+      // Không chặn việc tạo nhân viên nếu copy giấy tờ lỗi
+    }
+
+    return { ...employee, already: false };
+  }
+
+  /**
+   * Sao chép giấy tờ từ candidate_documents sang employee_documents.
+   * Nhiều loại candidate map về 1 loại employee (vd cccd_front + cccd_back -> cccd).
+   */
+  private async copyDocumentsToEmployee(candidateId: string, employeeId: string) {
+    // Map loại giấy tờ candidate -> employee
+    const TYPE_MAP: Record<string, string> = {
+      cccd_front: 'cccd',
+      cccd_back: 'cccd',
+      gplx: 'bang_lai',
+      cv: 'so_yeu_ly_lich',
+      health_cert: 'giay_kham_suc_khoe',
+      portrait: 'portrait',
+      full_body: 'full_body',
+      video: 'video',
+    };
+
+    const docs = await this.pool.query(
+      'SELECT document_type, file_path, file_name FROM candidate_documents WHERE candidate_id = $1 AND deleted_at IS NULL ORDER BY created_at ASC',
+      [candidateId],
+    );
+
+    for (const d of docs.rows) {
+      const empType = TYPE_MAP[d.document_type] || d.document_type;
+      await this.pool.query(
+        `INSERT INTO employee_documents (employee_id, document_type, file_name, file_path, uploaded_at)
+         VALUES ($1, $2, $3, $4, NOW())`,
+        [employeeId, empType, d.file_name, d.file_path],
+      );
+    }
   }
 
 
