@@ -405,12 +405,11 @@ export class CandidatesService {
       [candidateId],
     );
 
-    const inserted = new Set<string>();
+    const countByType: Record<string, number> = {};
     for (const d of docs.rows) {
       const empType = TYPE_MAP[d.document_type] || d.document_type;
-      // Với các loại map nhiều-sang-một (cccd_front + cccd_back → cccd), chỉ lấy bản đầu tiên
-      if (inserted.has(empType)) continue;
-      inserted.add(empType);
+      countByType[empType] = (countByType[empType] || 0) + 1;
+      if (countByType[empType] > 5) continue; // tối đa 5 file mỗi loại
       await this.pool.query(
         `INSERT INTO employee_documents (employee_id, document_type, file_name, file_path, uploaded_at)
          VALUES ($1, $2, $3, $4, NOW())`,
